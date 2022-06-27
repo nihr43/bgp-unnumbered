@@ -1,0 +1,32 @@
+---
+
+- name: configure network
+  template:
+   src: interfaces
+   dest: /etc/network/interfaces
+  register: interfaces
+
+- name: configure sysctls
+  template:
+   src: local.conf
+   dest: /etc/sysctl.d/local.conf
+  register: sysctl
+
+- name: reboot
+  reboot:
+  when: sysctl.changed or interfaces.changed
+
+- name: install frr
+  package: name=frr
+
+- name: configure frr
+  template:
+   src: frr.conf
+   dest: /etc/frr/frr.conf
+  notify: restart frr
+
+- name: enable frr
+  service:
+   name: frr
+   enabled: true
+   state: started

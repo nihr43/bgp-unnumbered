@@ -1,2 +1,2 @@
 [common]
-10.0.254.254 router_net=10.0.254.254/32 router_ip=10.0.254.254 router_as=64513
+10.0.254.254 router_net=10.0.254.254/32 router_ip=10.0.254.254 router_as=64513 router_advertise='["10.0.0.0/24"]'

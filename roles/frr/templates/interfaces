@@ -1,0 +1,14 @@
+auto lo
+iface lo inet loopback
+
+auto lo:10
+iface lo:10 inet static
+    address {{ router_ip_no_net }}
+    netmask 255.255.255.255
+
+{% for i in ansible_interfaces|sort %}
+{% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
+auto {{i}}
+iface {{i}} inet manual
+{% endif %}
+{% endfor %}

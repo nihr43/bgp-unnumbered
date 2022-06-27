@@ -9,6 +9,8 @@ iface lo:10 inet static
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
 auto {{i}}
+allow-hotplug {{i}}
 iface {{i}} inet manual
+
 {% endif %}
 {% endfor %}

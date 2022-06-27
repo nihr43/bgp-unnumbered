@@ -1,0 +1,2 @@
+[common]
+cedarview-904c router_int=enp5s0 router_net=10.0.254.254/32 router_ip=10.0.254.254 router_as=64513

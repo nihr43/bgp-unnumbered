@@ -3,7 +3,7 @@ iface lo inet loopback
 
 auto lo:10
 iface lo:10 inet static
-    address {{ router_ip_no_net }}
+    address {{ router_ip }}
     netmask 255.255.255.255
 
 {% for i in ansible_interfaces|sort %}

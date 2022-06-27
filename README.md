@@ -4,7 +4,7 @@ A reference implementation of bgp routing over unnumbered network interfaces.
 
 This is achieved by advertising ipv4 prefixes over ipv6 link-local nexthops.
 
-This allows layer-2 like ease of configuration of individual links, while maintaining a non-blocking fault-tolerant network architecture that is ( ideally ) vendor-agnostic.
+By trading a little more day-1 complexity in setup, we gain significant day-2 operation benefits.  This architecture allows switch-like ease of configuration of individual links, while maintaining a non-blocking fault-tolerant network architecture that is ( ideally ) vendor-agnostic.
 
 Allowing hypervisors to take part in the layer-3 topology allows an operator to achieve higher overall utilization of each individual link, more freely manipulate virtual layer-2 segments across dispersed physical infrastructre ( vxlans ), and better investigate issues when they do arise with the more robust layer-3 toolset.
 
@@ -41,6 +41,37 @@ routing enabled in the kernel:
 ```
 net.ipv4.conf.all.forwarding=1
 net.ipv6.conf.all.forwarding=1
+```
+
+Ansible is used to demonstrate the ease of templating such a configuration.  We can easily loop through a list of interfaces and enable bgp:
+
+```
+router bgp {{ router_as }}
+  bgp router-id {{ router_ip }}
+{% for i in ansible_interfaces|sort %}
+{% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
+  neighbor {{i}} interface remote-as internal
+{% endif %}
+{% endfor %}
+  address-family ipv4 unicast
+    network {{ router_net }}
+```
+
+Resulting in a device where I can simply plug-and-play on any port:
+
+```
+ router bgp 64513
+   bgp router-id 10.0.254.254
++  neighbor enp2s4f0 interface remote-as internal
++  neighbor enp2s4f1 interface remote-as internal
++  neighbor enp3s6f0 interface remote-as internal
++  neighbor enp3s6f1 interface remote-as internal
++  neighbor enp3s8f0 interface remote-as internal
++  neighbor enp3s8f1 interface remote-as internal
++  neighbor enp4s0 interface remote-as internal
+   neighbor enp5s0 interface remote-as internal
+   address-family ipv4 unicast
+     network 10.0.254.254/32
 ```
 
 ## Testing

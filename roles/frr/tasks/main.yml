@@ -1,5 +1,8 @@
 ---
 
+- name: install tools
+  package: name=net-tools,traceroute,ifenslave,bridge-utils
+
 - name: configure network
   template:
    src: interfaces

@@ -13,6 +13,7 @@ auto {{i}}
 allow-hotplug {{i}}
 {% endif %}
 iface {{i}} inet manual
+    post-up ifconfig {{i}} mtu 9000
 
 {% endif %}
 {% endfor %}

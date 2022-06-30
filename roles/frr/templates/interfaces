@@ -8,9 +8,25 @@ iface lo:10 inet static
 
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
+{% if i not in mgmt_ports %}
 auto {{i}}
 allow-hotplug {{i}}
+{% endif %}
 iface {{i}} inet manual
 
 {% endif %}
 {% endfor %}
+
+{% if mgmt_ports is iterable %}
+auto bond0
+iface bond0 inet manual
+    bond-slaves{% for i in mgmt_ports|sort %} {{i}}{% endfor %}
+
+    bond-mode 4
+
+auto br0
+iface br0 inet static
+    bridge_ports bond0
+    address {{ mgmt_ip }}
+    netmask 255.255.255.0
+{% endif %}

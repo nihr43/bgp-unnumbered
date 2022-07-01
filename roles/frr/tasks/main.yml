@@ -1,7 +1,7 @@
 ---
 
 - name: install tools
-  package: name=net-tools,traceroute,ifenslave,bridge-utils
+  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump
 
 - name: configure network
   template:
@@ -26,6 +26,15 @@
   template:
    src: frr.conf
    dest: /etc/frr/frr.conf
+  notify: restart frr
+
+- name: configure frr daemons
+  template:
+   src: daemons
+   dest: /etc/frr/daemons
+   owner: frr
+   group: frr
+   mode: 0640
   notify: restart frr
 
 - name: enable frr

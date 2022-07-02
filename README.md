@@ -74,7 +74,97 @@ Resulting in a device where I can simply plug-and-play on any port:
      network 10.0.254.254/32
 ```
 
-## Testing
+## L2 overlays with BGP EVPN
+
+BGP is capable of dynamically propogating vni endponts for establishing unicast vxlans.
+
+In this unnumbered environment, we simply activate the protocol on each interface neighbor:
+
+```
+  address-family l2vpn evpn
+    neighbor eno1 activate
+    neighbor eno2 activate
+    advertise-all-vni
+    advertise ipv4 unicast
+```
+
+The same is done on the spines.
+
+Then bring up a vxlan interface and bridge using our existing loopback address for the local tunnel ip:
+
+```
+ip link add vxlan100 type vxlan id 100 dstport 4789 local 10.0.200.3 nolearning
+brctl addbr br100
+brctl addif br100 vxlan100
+ip link set up dev br100
+ip link set up dev vxlan10
+```
+
+Once this is set up on some hypervisors we want to participate in the vxlan, they should be able to see prefixes to the other vxlan endpoints:
+
+```
+root@apollolake-6e10:~# vtysh <<< "show bgp evpn route"
+
+Hello, this is FRRouting (version 7.5.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+apollolake-6e10# show bgp evpn route
+BGP table version is 1, local router ID is 10.0.200.2
+Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
+Origin codes: i - IGP, e - EGP, ? - incomplete
+EVPN type-1 prefix: [1]:[ESI]:[EthTag]:[IPlen]:[VTEP-IP]
+EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
+EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
+EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
+EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
+
+   Network          Next Hop            Metric LocPrf Weight Path
+                    Extended Community
+Route Distinguisher: 10.0.200.2:2
+*> [3]:[0]:[32]:[10.0.200.2]
+                    10.0.200.2(apollolake-6e10)
+                                                       32768 i
+                    ET:8 RT:64791:100
+Route Distinguisher: 10.0.200.2:3
+*> [3]:[0]:[32]:[10.0.200.2]
+                    10.0.200.2(apollolake-6e10)
+                                                       32768 i
+                    ET:8 RT:64791:200
+Route Distinguisher: 10.0.200.3:2
+*> [3]:[0]:[32]:[10.0.200.3]
+                    10.0.200.3(apollolake-179e)
+                                                           0 65451 i
+                    RT:65451:100 ET:8
+Route Distinguisher: 10.0.200.3:3
+*> [3]:[0]:[32]:[10.0.200.3]
+                    10.0.200.3(apollolake-179e)
+                                                           0 65451 i
+                    RT:65451:200 ET:8
+
+Displayed 4 prefixes (4 paths)
+```
+
+And if we ping broadcast from one node, we should be able to tcpdump it from other:
+
+```
+root@apollolake-179e:~# ping -b 255.255.255.255 -I br100
+WARNING: pinging broadcast address
+```
+
+...
+
+```
+root@apollolake-6e10:~# tcpdump -i br100
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on br100, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+02:19:41.766268 IP apollolake-179e > 255.255.255.255: ICMP echo request, id 29320, seq 1, length 64
+02:19:42.798323 IP apollolake-179e > 255.255.255.255: ICMP echo request, id 29320, seq 2, length 64
+02:19:49.565221 IP apollolake-179e > 255.255.255.255: ICMP echo request, id 30512, seq 1, length 64
+```
+
+And now we have a purely programmable layer 2 segment running over our ideal L3 substrate!
+
+## Performance
 
 Test router is a Supermicro Atom D525 system with integrated 1gb interfaces.  I tested latency and bandwidth through a standard switch, and then the D525 linux router, using similarly specced systems as the client and server.
 

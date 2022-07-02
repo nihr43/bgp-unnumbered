@@ -164,6 +164,120 @@ listening on br100, link-type EN10MB (Ethernet), snapshot length 262144 bytes
 
 And now we have a purely programmable layer 2 segment running over our ideal L3 substrate!
 
+## Booting VMs on the vxlan
+
+Now the we have a distributed L2 segment, lets connect some VMs, get them addressed, talking to eachother, and talking to the internet.
+
+We'll use LXD.
+
+I've given each hypervisor's br100 an address in the 172.16.0.0/24 space.  172.16.0.1 looks like this:
+
+```
+4: vxlan100: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br100 state UNKNOWN group default qlen 1000
+    link/ether 72:94:76:9c:3d:2a brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::7094:76ff:fe9c:3d2a/64 scope link 
+       valid_lft forever preferred_lft forever
+5: br100: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 3e:17:ca:87:9c:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.16.0.1/24 scope global br100
+       valid_lft forever preferred_lft forever
+    inet6 fe80::3c17:caff:fe87:9c02/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+
+Thanks to the `advertise all connected` frr configuration, the bgp deployment learns that the hypervisors all have paths into 172.16.0.0/24:
+
+```
+vtysh <<< "show ip bgp"
+...
+*  172.16.0.0/24    enp3s6f0                 0             0 65451 ?
+*>                  enp3s8f0                 0             0 65489 ?
+```
+
+Now we tell lxd to use this bridge for our default 'profile':
+
+```
+lxc profile edit default
+...
+    parent: br100
+...
+```
+
+I've created a quick dhcp server on the segment with a static ip:
+
+```
+lxc launch images:debian/12 vxlan100-dhcp
+...
+apt isntall isc-dchp-server
+...
+root@vxlan100-dhcp:~# cat /etc/systemd/network/eth0.network 
+[Match]
+Name=eth0
+[Network]
+Address=172.16.0.10/24
+Gateway=172.16.0.1
+DNS=1.1.1.1
+root@vxlan100-dhcp:~# cat /etc/dhcp/dhcpd.conf
+...
+subnet 172.16.0.0 netmask 255.255.255.0 {
+  range 172.16.0.11 172.16.0.254;
+  option domain-name-servers 1.1.1.1;
+  option routers 172.16.0.1;
+  default-lease-time 600;
+  max-lease-time 7200;
+}
+```
+
+Notice we're using one of the hypervisor's /24 bridge addresses for the default gateway.  We'll discuss the issue with this later.
+
+With dhcp in place, we can launch arbitrary instances:
+
+```
+lxc launch images:debian/12 iperf1
+lxc launch images:debian/12 iperf2
+```
+
+Note they end up on random nodes, but they do indeed get addresses from vxlan100-dhcp:
+
+```
+~# lxc ls
++---------------+---------+--------------------+------+-----------------+-----------+-----------------+
+|     NAME      |  STATE  |        IPV4        | IPV6 |      TYPE       | SNAPSHOTS |    LOCATION     |
++---------------+---------+--------------------+------+-----------------+-----------+-----------------+
+| iperf1        | RUNNING | 172.16.0.15 (eth0) |      | CONTAINER       | 0         | apollolake-179e |
++---------------+---------+--------------------+------+-----------------+-----------+-----------------+
+| iperf2        | RUNNING | 172.16.0.14 (eth0) |      | CONTAINER       | 0         | apollolake-6e10 |
++---------------+---------+--------------------+------+-----------------+-----------+-----------------+
+| vxlan100-dhcp | RUNNING | 172.16.0.10 (eth0) |      | CONTAINER       | 0         | apollolake-179e |
++---------------+---------+--------------------+------+-----------------+-----------+-----------------+
+```
+
+They can access the internet:
+
+```
+root@iperf1:~# apt install iperf
+...
+Unpacking iperf (2.1.7+dfsg1-1) ...
+Setting up iperf (2.1.7+dfsg1-1) ...
+```
+
+And for the grand reveal, lets check the inter-node bandwidth of the overlay:
+
+```
+$ lxc exec iperf1 -- iperf -s
+...
+$ lxc exec iperf2 -- iperf -c 172.16.0.15
+------------------------------------------------------------
+Client connecting to 172.16.0.15, TCP port 5001
+TCP window size: 16.0 KByte (default)
+------------------------------------------------------------
+[  1] local 172.16.0.14 port 52832 connected with 172.16.0.15 port 5001 (icwnd/mss/irtt=14/1448/510)
+[ ID] Interval       Transfer     Bandwidth
+[  1] 0.0000-10.0261 sec  1.06 GBytes   908 Mbits/sec
+```
+
+908 Mbits/sec from VM to VM, between physical nodes, over the vxlan.
+
 ## Performance
 
 Test router is a Supermicro Atom D525 system with integrated 1gb interfaces.  I tested latency and bandwidth through a standard switch, and then the D525 linux router, using similarly specced systems as the client and server.

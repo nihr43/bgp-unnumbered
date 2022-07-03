@@ -5,6 +5,12 @@ auto lo:10
 iface lo:10 inet static
     address {{ router_ip }}
     netmask 255.255.255.255
+    post-up ip link add vxlan100 type vxlan id 100 dstport 4789 local {{ router_ip }} nolearning &&\
+      brctl addbr br100 &&\
+      brctl addif br100 vxlan100 &&\
+      brctl stp br100 off &&\
+      ip link set up dev br100 &&\
+      ip link set up dev vxlan100
 
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}

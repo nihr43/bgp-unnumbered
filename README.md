@@ -34,7 +34,7 @@ frr configured to peer using interfaces rather than ips:
 
 ```
 router bgp 64513
-  neighbor enp5s0 interface remote-as internal
+  neighbor enp5s0 interface remote-as external
   ...
 ```
 
@@ -52,7 +52,7 @@ router bgp {{ router_as }}
   bgp router-id {{ router_ip }}
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
-  neighbor {{i}} interface remote-as internal
+  neighbor {{i}} interface remote-as external
 {% endif %}
 {% endfor %}
   address-family ipv4 unicast
@@ -64,14 +64,14 @@ Resulting in a device where I can simply plug-and-play on any port:
 ```
  router bgp 64513
    bgp router-id 10.0.254.254
-+  neighbor enp2s4f0 interface remote-as internal
-+  neighbor enp2s4f1 interface remote-as internal
-+  neighbor enp3s6f0 interface remote-as internal
-+  neighbor enp3s6f1 interface remote-as internal
-+  neighbor enp3s8f0 interface remote-as internal
-+  neighbor enp3s8f1 interface remote-as internal
-+  neighbor enp4s0 interface remote-as internal
-   neighbor enp5s0 interface remote-as internal
++  neighbor enp2s4f0 interface remote-as external
++  neighbor enp2s4f1 interface remote-as external
++  neighbor enp3s6f0 interface remote-as external
++  neighbor enp3s6f1 interface remote-as external
++  neighbor enp3s8f0 interface remote-as external
++  neighbor enp3s8f1 interface remote-as external
++  neighbor enp4s0 interface remote-as external
+   neighbor enp5s0 interface remote-as external
    address-family ipv4 unicast
      network 10.0.254.254/32
 ```

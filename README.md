@@ -278,6 +278,14 @@ TCP window size: 16.0 KByte (default)
 
 908 Mbits/sec from VM to VM, between physical nodes, over the vxlan.
 
+## North/South vxlan traffic
+
+North / South traffic in and out of the vxlan is something I havent yet found a good solution for.  Since we're using only one of the hypervisors' /24 bridge addresses for the default gateway of the virtual network, if this node is rebooted, the entire segment will lose internet access.
+
+I tried using keepalived on the bridges, but this didn't work well with bgp.  I have yet to troubleshoot why.  I may continue to investigate this, as it seems like the best solution.
+
+However, even if keepalived did work, we have an issue with less-than-ideal routes in and out of the segment.  If gateway 172.16.0.1 happens to exist on hypervisor-0 at a given time, and a vm on hypervisor-1 wants to talk to the internet, the traffic will have to make an extra hop through hypervisor-0, and then to the upstream router.  Perhaps some of this can be alleviated by placing the physical-to-vxlan gateways on the spines instead of the hypervisors.  Even then, we will be limited by the capacity of a single spine for north/south traffic.  It stands to reason that we can't solve all L2 problems, hence the motivation to implement a pure L3 network in the first place.
+
 ## Performance
 
 Test router is a Supermicro Atom D525 system with integrated 1gb interfaces.  I tested latency and bandwidth through a standard switch, and then the D525 linux router, using similarly specced systems as the client and server.

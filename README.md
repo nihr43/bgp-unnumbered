@@ -282,9 +282,23 @@ TCP window size: 16.0 KByte (default)
 
 North / South traffic in and out of the vxlan is something I havent yet found a good solution for.  Since we're using only one of the hypervisors' /24 bridge addresses for the default gateway of the virtual network, if this node is rebooted, the entire segment will lose internet access.
 
-I tried using keepalived on the bridges, but this didn't work well with bgp.  I have yet to troubleshoot why.  I may continue to investigate this, as it seems like the best solution.
+I tried using keepalived on the bridges, but this didn't initially seem to work well with bgp.  I have yet to troubleshoot why.  I may or may not continue to investigate this.
 
-However, even if keepalived did work, we have an issue with less-than-ideal routes in and out of the segment.  If gateway 172.16.0.1 happens to exist on hypervisor-0 at a given time, and a vm on hypervisor-1 wants to talk to the internet, the traffic will have to make an extra hop through hypervisor-0, and then to the upstream router.  Perhaps some of this can be alleviated by placing the physical-to-vxlan gateways on the spines instead of the hypervisors.  Even then, we will be limited by the capacity of a single spine for north/south traffic.  It stands to reason that we can't solve all L2 problems, hence the motivation to implement a pure L3 network in the first place.
+Even if keepalived did work, we have an issue with less-than-ideal routes in and out of the segment.  If gateway 172.16.0.1 happens to exist on hypervisor-0 at a given time, and a vm on hypervisor-1 wants to talk to the internet, the traffic will have to make an extra hop from hypervisor-1, through hypervisor-0, and then to the upstream router.  Perhaps some of this can be alleviated by placing the vxlan gateways on the spines instead of the hypervisors, since all the traffic flows through them anyway.  Even then, we will be limited by the capacity of a single spine for north/south traffic.  It stands to reason that we can't expect to solve all L2 problems, hence the motivation to implement a pure L3 network in the first place.
+
+Perhaps instead of hacking L2 technologies to build some sort of pseudo-highly-available north/south vxlan gateways, we take a software-operator approach.  Consider the following:
+
+- a python or golang daemon on each hypervisor that watches LXD and brings up an ip in the vxlan address space whenever "i become the database-leader".
+- this will take advantage of LXD's dqlite CP properties; we will not enter a split brain.
+- this will take advantage of our BGP configuration; when a node assumes an address, it will start advertising that network.
+- when a node that previously had the gateway address finds it is no longer the raft master, it will drop the address.
+- tie directly into dqlite on disk, skipping the LXD api.  this will hopefully improve stability and compute efficiency.
+- if dealing with many L2 segments/gateways, hash-map gateways accross online cluster members rather than using the "database-leader".
+- going a step farther, incorporate addresses and physical locations of known instances while choosing a target cluster node for a slight "free" improvement in locality
+
+This approach would afford us a kubernetes-like "eventual availability" quality for our vxlan default gateways, while likely being a bit more robust and fault tolerant than some sort of glued-together assortment of keepalived and virtual routers.
+
+The only thing left would be to implement redundant dhcpd servers, which is an easy task.
 
 ## Performance
 

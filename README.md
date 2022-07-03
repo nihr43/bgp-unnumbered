@@ -1,12 +1,14 @@
 # bgp-unnumbered
 
-A reference implementation of bgp routing over unnumbered network interfaces.
+This is a reference implementation of bgp routing over unnumbered network interfaces using Debian and FRRouting.  The architecture is a clos spine-leaf network, where the leafs are hypervisors running lxd and kubernetes, and the spines are x86 Debian systems with extra pcie network interfaces.
 
-This is achieved by advertising ipv4 prefixes over ipv6 link-local nexthops.
+The primary motivation for implementing a pure-L3 network down to the hypervisors is to establish a truly non-blocking, fault tolerant, vendor-agnostic (mostly) datacenter network.  There are very good reasons the entire internet is not a single L2 segment - what we're doing here is essentially pulling that 'edge' down a bit farther.
 
-By trading a little more day-1 complexity in setup, we gain significant day-2 operation benefits.  This architecture allows switch-like ease of configuration of individual links, while maintaining a non-blocking fault-tolerant network architecture that is ( ideally ) vendor-agnostic.
+The [BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) technique makes this very easy to implement and manage, once you've grokked the initial configuration.  The fundamental concept that allows this to work is the advertisement of ipv4 prefixes over ipv6 link-local next-hops.  In the network presented here, moving a cable or introducing a new leaf or spine requires no configuration change (other than adding the individual device to the inventory and provisioning it).  I could walk down to my rack and physically turn my spine-leaf network into a hub-spoke, or a long horrible chain, and bgp would just figure it out - in fact, if only one cable is moved at a time, there would likely be very little service interruption.  Of course, this means physical security is important - and if you were doing this in a real datacenter, you would want to add authentication for bgp peering, and prefix rules / clever firewalling to ensure guest VMs dont somehow poison the datacenter routing table.
 
-Allowing hypervisors to take part in the layer-3 topology allows an operator to achieve higher overall utilization of each individual link, more freely manipulate virtual layer-2 segments across dispersed physical infrastructre ( vxlans ), and better investigate issues when they do arise with the more robust layer-3 toolset.
+From a high-level management aspect, this is an attractive concept because the tools and the process (ansible in this example) to configure the spines/leafs is the same as for the hypervisors.  In this environment, the spine routers are simply "linux boxes with better network cards" ( though of course if i were building a real datacenter, i would substitute these components with whitebox linux ONIE switches).  Taking this a step farther, consider the following: these linux routers have the same upgrade path as the rest of the infrastructure, the same install image, the same monitoring, the same package management...  In my mind, open source whitebox routing is the ultimate evolution ( and perhap irony ) of "software defined networking" and "network automation".
+
+I am far from the first person to build such a thing, though this is sort of a darker magic that is difficult to piece together.  [Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.
 
 ## Components
 

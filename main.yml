@@ -1,5 +1,9 @@
 ---
 
-- hosts: common
+- hosts: spine
+  roles:
+   - frr
+
+- hosts: leaf
   roles:
    - frr

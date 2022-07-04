@@ -280,6 +280,42 @@ TCP window size: 16.0 KByte (default)
 
 908 Mbits/sec from VM to VM, between physical nodes, over the vxlan.
 
+_note on guest nics regarding gateways_
+
+I found that LXD's default macvlan nic type confused arp when the vxlan's default gateway happened to coexist on the same node as a guest.  Other guests would function as expected but not guests co-located with the current 'addressed' default gateway bridge.
+
+arp errors:
+
+```
+~# arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.16.0.15                      (incomplete)                              br100  <- this is a local guest in br100.  we cant ping this.
+172.16.0.14              ether   00:16:3e:ec:52:35   C                     br100  <- this is a functional guest on a different hypervisor.
+```
+
+The solution was to set `nictype: bridged` using `lxc profile edit default`.  This creates veth devices which are added to the linux bridge.  Using this mode, everything works exactly as one would expect:
+
+```
+~# brctl show br100
+bridge name	bridge id		STP enabled	interfaces
+br100		8000.9ecb5becbcf8	no		veth619ff68e
+							veth8ded2ea2
+							vxlan100
+~# arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.16.0.20              ether   00:16:3e:9b:d3:4c   C                     br100  <- local guest
+172.16.0.21              ether   00:16:3e:06:07:3c   C                     br100  <- remote guest
+```
+
+Correctly learned gateway from guests' prespective:
+
+```
+~# lxc exec iperf1 -- arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+_gateway                 ether   9e:cb:5b:ec:bc:f8   C                     eth0
+vxlan100-dhcp            ether   00:16:3e:4c:b1:32   C                     eth0
+```
+
 ## North/South vxlan traffic
 
 North / South traffic in and out of the vxlan is something I havent yet found a good solution for.  Since we're using only one of the hypervisors' /24 bridge addresses for the default gateway of the virtual network, if this node is rebooted, the entire segment will lose internet access.

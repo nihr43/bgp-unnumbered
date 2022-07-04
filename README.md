@@ -338,6 +338,23 @@ This approach would afford us a kubernetes-like "eventual availability" quality 
 
 The only thing left would be to implement redundant dhcpd servers, which is an easy task.
 
+_a day later_
+
+Having read the [nvidia/cumulus document](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-37/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/#enable-evpn-between-bgp-neighbors) on evpn implementation, i've learned of the anycast gateway approach.
+
+All we have to do is put a virtual interface on each of our hypervisors' bridges, and assign the same ip and mac to all of these interfaces.  We use this as the default gateway for our guests.  The key that makes this work is the mac address duplication - all VMs learn the same mac/ip arp entry for the gateway, and then use the instance most local to them.
+
+Implementing the gateways ad-hoc, on each leaf:
+
+```
+ip link add svi100 type veth
+ip link set veth0 up
+ip link set dev svi100 address aa:bb:ba:cf:8c:88
+ip link set svi100 up
+ip ad add 172.16.0.254/24 dev svi100
+brctl addif br100 veth0
+```
+
 ## Performance
 
 Test router is a Supermicro Atom D525 system with integrated 1gb interfaces.  I tested latency and bandwidth through a standard switch, and then the D525 linux router, using similarly specced systems as the client and server.

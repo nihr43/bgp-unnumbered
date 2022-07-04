@@ -12,6 +12,12 @@ iface lo:10 inet static
       brctl stp br{{i}} off &&\
       ip link set up dev br{{i}} &&\
       ip link set up dev vxlan{{i}}
+    post-up ip link add svi{{i}}a type veth peer name svi{{i}}b &&\
+      ip link set dev svi{{i}}b address aa:bb:ba:cf:8c:88 &&\
+      ip ad add 172.16.0.254/24 dev svi{{i}}b &&\
+      ip link set svi{{i}}b up &&\
+      ip link set svi{{i}}a up &&\
+      brctl addif br{{i}} svi{{i}}a
 {% endfor %}
 
 {% for i in ansible_interfaces|sort %}

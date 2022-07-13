@@ -87,7 +87,6 @@ In this unnumbered environment, we simply activate the protocol on each interfac
     neighbor eno1 activate
     neighbor eno2 activate
     advertise-all-vni
-    advertise ipv4 unicast
 ```
 
 The same is done on the spines.

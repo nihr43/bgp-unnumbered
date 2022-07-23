@@ -1,7 +1,7 @@
 ---
 
 - name: install tools
-  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables,frr-pythontools
+  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables
 
 - name: configure network
   template:
@@ -30,7 +30,7 @@
    state: present
 
 - name: install frr
-  package: name=frr
+  package: name=frr,frr-pythontools
 
 - name: configure frr
   template:

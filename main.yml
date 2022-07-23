@@ -7,3 +7,8 @@
 - hosts: leaf
   roles:
    - frr
+
+- hosts: localhost
+  connection: local
+  roles:
+   - frr

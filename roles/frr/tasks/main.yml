@@ -1,7 +1,7 @@
 ---
 
 - name: install tools
-  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables
+  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables,gnupg
 
 - name: configure network
   template:

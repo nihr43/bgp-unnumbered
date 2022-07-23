@@ -47,11 +47,11 @@
   service:
    name: frr
    state: restarted
-  when: ansible_hostname != 'localhost' and conf.changed or daemons.changed
+  when: inventory_hostname != 'localhost' and conf.changed or daemons.changed
 
 - name: enable frr
   service:
    name: frr
    enabled: true
    state: started
-  when: ansible_hostname != 'localhost'
+  when: inventory_hostname != 'localhost'

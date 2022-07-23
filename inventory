@@ -1,14 +1,14 @@
 # vars:
 # - router_ip: the loopback interface ip to be used for bgp
 # - router_advertise: extra network prefixes to advertise
-# - mgmt_ports: network interfaces to not enable bgp on, perhaps to plug into L2 access switch
-# - mgmt_ip: ip for mgmt ports bond.  it is assumed /24
+# - reserved_ports: network interfaces not to enable bgp on
 # - vxlan_vnis: vxlans to "mount".  result is an L2 bridge for each vni.
 
 [spine]
-10.0.254.254 router_ip=10.0.254.254 router_advertise='[]' mgmt_ports='["enp4s0"]' mgmt_ip=10.1.0.10 vxlan_vnis='[]'
+10.0.254.253 router_ip=10.0.254.253 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[]'
+10.0.254.254 router_ip=10.0.254.254 router_advertise='["0.0.0.0/0"]' reserved_ports='["enp4s0"]' vxlan_vnis='[]'
 
 [leaf]
-10.0.200.1 router_ip=10.0.200.1 router_advertise='[]' mgmt_ports='[]' mgmt_ip='' vxlan_vnis='[100]'
-10.0.200.2 router_ip=10.0.200.2 router_advertise='[]' mgmt_ports='[]' mgmt_ip='' vxlan_vnis='[100]'
-10.0.200.3 router_ip=10.0.200.3 router_advertise='[]' mgmt_ports='[]' mgmt_ip='' vxlan_vnis='[100]'
+10.0.200.1 router_ip=10.0.200.1 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]'
+10.0.200.2 router_ip=10.0.200.2 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]'
+10.0.200.3 router_ip=10.0.200.3 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]'

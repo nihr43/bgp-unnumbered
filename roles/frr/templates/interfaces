@@ -16,7 +16,7 @@ iface lo:10 inet static
 
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith(('ens','enp','eno','eth')) %}
-{% if i not in mgmt_ports %}
+{% if i not in reserved_ports %}
 auto {{i}}
 allow-hotplug {{i}}
 {% endif %}
@@ -25,18 +25,3 @@ iface {{i}} inet manual
 
 {% endif %}
 {% endfor %}
-
-{% if mgmt_ports|length > 0 %}
-auto bond0
-iface bond0 inet manual
-    bond-slaves{% for i in mgmt_ports|sort %} {{i}}{% endfor %}
-
-    bond-mode 4
-
-auto br0
-iface br0 inet static
-    bridge_ports bond0
-    address {{ mgmt_ip }}
-    netmask 255.255.255.0
-{% else %}
-{% endif %}

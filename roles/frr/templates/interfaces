@@ -15,7 +15,7 @@ iface lo:10 inet static
 {% endfor %}
 
 {% for i in ansible_interfaces|sort %}
-{% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
+{% if i.startswith('en') or i.startswith('eth') %}
 {% if i not in mgmt_ports %}
 auto {{i}}
 allow-hotplug {{i}}

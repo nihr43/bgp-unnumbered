@@ -15,10 +15,6 @@
    dest: /etc/sysctl.d/local.conf
   register: sysctl
 
-- name: reboot
-  reboot:
-  when: sysctl.changed or interfaces.changed and ansible_hostname != localhost
-
 - name: frr repo key
   ansible.builtin.apt_key:
    url: https://deb.frrouting.org/frr/keys.asc

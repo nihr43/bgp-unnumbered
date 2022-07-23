@@ -19,6 +19,11 @@
   reboot:
   when: sysctl.changed or interfaces.changed and ansible_hostname != localhost
 
+- name: frr repo key
+  ansible.builtin.apt_key:
+   url: https://deb.frrouting.org/frr/keys.asc
+   state: present
+
 - name: frr repo
   ansible.builtin.apt_repository:
    repo: deb https://deb.frrouting.org/frr bullseye frr-stable

@@ -32,7 +32,7 @@
   template:
    src: frr.conf
    dest: /etc/frr/frr.conf
-  register: config
+  register: conf
 
 - name: configure frr daemons
   template:
@@ -41,13 +41,13 @@
    owner: frr
    group: frr
    mode: 0640
-  register: config
+  register: daemons
 
 - name: restart frr
   service:
    name: frr
    state: restarted
-  when: ansible_hostname != 'localhost' and config.changed
+  when: ansible_hostname != 'localhost' and conf.changed or daemons.changed
 
 - name: enable frr
   service:

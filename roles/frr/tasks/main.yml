@@ -17,7 +17,12 @@
 
 - name: reboot
   reboot:
-  when: sysctl.changed or interfaces.changed
+  when: sysctl.changed or interfaces.changed and ansible_hostname != localhost
+
+- name: frr repo
+  ansible.builtin.apt_repository:
+   repo: deb https://deb.frrouting.org/frr bullseye frr-stable
+   state: present
 
 - name: install frr
   package: name=frr

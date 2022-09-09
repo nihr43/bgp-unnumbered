@@ -339,9 +339,7 @@ The only thing left would be to implement redundant dhcpd servers, which is an e
 
 _a day later_
 
-Having read the [nvidia/cumulus document](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-37/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/#enable-evpn-between-bgp-neighbors) on evpn implementation, i've learned of the anycast gateway approach.
-
-All we have to do is put a virtual interface on each of our hypervisors' bridges, and assign the same ip and mac to all of these interfaces.  We use this as the default gateway for our guests.  The key that makes this work is the mac address duplication - all VMs learn the same mac/ip arp entry for the gateway, and then use the instance most local to them.
+Having read the [nvidia/cumulus document](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-37/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/#enable-evpn-between-bgp-neighbors) on evpn implementation, i've learned of the anycast gateway approach.  Upon initial investigation, this appears to sort of work, but I'll have to learn more about how to avoid mac/arp confusion.
 
 Implementing the gateways ad-hoc, on each leaf:
 

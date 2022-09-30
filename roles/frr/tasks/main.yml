@@ -43,15 +43,19 @@
    mode: 0640
   register: daemons
 
-- name: restart frr
-  service:
-   name: frr
-   state: restarted
-  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed )"
-
 - name: enable frr
   service:
    name: frr
    enabled: true
    state: started
   when: "'localhost' not in inventory_hostname"
+
+- name: restart frr
+  service:
+   name: frr
+   state: restarted
+  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed )"
+
+- name: reboot
+  reboot:
+  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or interfaces.changed or sysctl.changed )"

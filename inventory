@@ -5,8 +5,7 @@
 # - vxlan_vnis: vxlans to "mount".  result is an L2 bridge for each vni.
 
 [spine]
-10.0.254.253 router_ip=10.0.254.253 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[]'
-10.0.254.254 router_ip=10.0.254.254 router_advertise='["0.0.0.0/0"]' reserved_ports='["enp4s0"]' vxlan_vnis='[]'
+10.0.254.254 router_ip=10.0.254.254 router_advertise='["0.0.0.0/0"]' reserved_ports='["enp4s0","enp5s0"]' vxlan_vnis='[]'
 
 [leaf]
 10.0.200.1 router_ip=10.0.200.1 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]'

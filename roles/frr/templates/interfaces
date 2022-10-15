@@ -13,6 +13,9 @@ iface lo:10 inet static
       ip link set up dev br{{i}} &&\
       ip link set up dev vxlan{{i}}
 {% endfor %}
+{% for i in anycast_ips %}
+    post-up ip ad add {{i}} dev lo # it appears the order of adding addresses affects the default route src
+{% endfor %}
 
 {% for i in ansible_interfaces|sort %}
 {% if i.startswith(('ens','enp','eno','eth')) %}

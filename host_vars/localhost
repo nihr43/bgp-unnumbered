@@ -2,3 +2,4 @@ router_ip: 10.0.200.254
 router_advertise: []
 reserved_ports: ['enp35s0']
 vxlan_vnis: [100]
+anycast_ips: []

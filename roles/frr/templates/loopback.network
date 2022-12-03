@@ -1,0 +1,5 @@
+[Match]
+Name=lo
+
+[Address]
+Address={{router_ip}}/32

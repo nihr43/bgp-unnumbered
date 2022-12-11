@@ -3,11 +3,32 @@
 - name: install tools
   package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables,gnupg
 
-- name: configure network
+- name: ensure absence of classic /etc/network/interfaces
+  file:
+   path: /etc/network/interfaces
+   state: absent
+
+- name: set loopback ip
   template:
-   src: interfaces
-   dest: /etc/network/interfaces
+   src: loopback.network
+   dest: /etc/systemd/network/00_loopback.network
+  register: loopback
+
+- name: configure interfaces participating in bgp
+  template:
+   src: bgp_interfaces.network
+   dest: /etc/systemd/network/01_bgp_interfaces.network
   register: interfaces
+
+- name: enable systemd-networkd
+  service:
+   name: systemd-networkd
+   enabled: true
+
+- name: disable classic networking
+  service:
+   name: networking.service
+   enabled: false
 
 - name: configure sysctls
   template:
@@ -58,4 +79,4 @@
 
 - name: reboot
   reboot:
-  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or interfaces.changed or sysctl.changed )"
+  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or interfaces.changed or sysctl.changed or loopback.changed )"

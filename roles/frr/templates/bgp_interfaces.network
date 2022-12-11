@@ -1,0 +1,8 @@
+[Match]
+Name={% for i in ansible_interfaces|sort %}{% if i.startswith(('ens','enp','eno','eth')) %}{% if i not in reserved_ports %}{{i}} {% endif %}{% endif %}{% endfor %}
+
+
+[Link]
+MTUBytes=9000
+ActivationPolicy=always-up
+RequiredForOnline=no

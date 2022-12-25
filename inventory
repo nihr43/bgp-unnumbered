@@ -8,6 +8,6 @@
 10.0.254.254 router_ip=10.0.254.254 router_advertise='["0.0.0.0/0"]' reserved_ports='["enp4s0","enp5s0"]' vxlan_vnis='[]' anycast_ips='[]'
 
 [leaf]
-10.0.200.1 router_ip=10.0.200.1 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ips='["10.0.200.254/32"]'
-#10.0.200.2 router_ip=10.0.200.2 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ips='["10.0.200.253/32"]'
-10.0.200.3 router_ip=10.0.200.3 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ips='["10.0.200.254/32"]'
+10.0.200.2 router_ip=10.0.200.2 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ip='10.0.200.254'
+10.0.200.3 router_ip=10.0.200.3 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ip='10.0.200.254'
+10.0.254.253 router_ip=10.0.254.253 router_advertise='[]' reserved_ports='[]' vxlan_vnis='[100]' anycast_ip='10.0.200.254'

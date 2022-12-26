@@ -1,5 +1,5 @@
 [Match]
-Name=bgpvlan_{{item}}
+Name=bgp{{item}}
 Type=vlan
 
 [Link]

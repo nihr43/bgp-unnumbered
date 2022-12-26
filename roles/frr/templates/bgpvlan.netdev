@@ -1,5 +1,5 @@
 [NetDev]
-Name=bgpvlan_{{item}}
+Name=bgp{{item}}
 Kind=vlan
 
 [VLAN]

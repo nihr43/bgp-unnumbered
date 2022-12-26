@@ -1,0 +1,7 @@
+[Match]
+Name=bgpvlan_{{item}}
+Type=vlan
+
+[Link]
+ActivationPolicy=always-up
+RequiredForOnline=no

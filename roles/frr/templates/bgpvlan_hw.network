@@ -1,0 +1,23 @@
+[Match]
+Name={{item}}
+
+[Network]
+VLAN=bgpvlan_{{item}}
+{% if l2_access==True %}
+Address=172.16.{{ 254 | random(seed=inventory_hostname+item)}}.1/24
+DHCPServer=true
+{% endif %}
+
+[Link]
+MTUBytes=9000
+ActivationPolicy=always-up
+RequiredForOnline=no
+
+{% if l2_access==True %}
+[DHCPServer]
+PoolOffset=100
+PoolSize=20
+EmitDNS=yes
+DNS=1.1.1.1
+BindToInterface=yes
+{% endif %}

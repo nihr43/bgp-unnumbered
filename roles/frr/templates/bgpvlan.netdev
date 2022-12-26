@@ -1,0 +1,6 @@
+[NetDev]
+Name=bgpvlan_{{item}}
+Kind=vlan
+
+[VLAN]
+Id=10

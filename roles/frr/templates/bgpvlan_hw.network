@@ -15,8 +15,6 @@ RequiredForOnline=no
 
 {% if l2_access==True %}
 [DHCPServer]
-PoolOffset=100
-PoolSize=20
 EmitDNS=yes
 DNS=1.1.1.1
 BindToInterface=yes

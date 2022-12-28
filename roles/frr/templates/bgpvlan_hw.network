@@ -4,7 +4,7 @@ Name={{item}}
 [Network]
 VLAN=bgp{{item}}
 {% if l2_access==True %}
-Address=172.16.{{ 254 | random(seed=inventory_hostname+item)}}.1/24
+Address=172.16.{{ 254 | random(seed=inventory_hostname+item)}}.{{ (3 | random(seed=inventory_hostname+item)*64) + 1}}/26
 DHCPServer=true
 {% endif %}
 

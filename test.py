@@ -17,14 +17,14 @@ def cleanup(client, log):
         log.info(i.name + ' deleted')
 
 
-def create_node(client, name, log):
+def create_node(client, name, image, log):
     name = 'bgp-unnumbered-' + name + '-' + str(uuid.uuid4())[0:5]
     config = {'name': name,
               'source': {'type': 'image',
                          'mode': 'pull',
                          'server': 'https://images.linuxcontainers.org',
                          'protocol': 'simplestreams',
-                         'alias': 'debian/12'},
+                         'alias': image},
               'config': {'limits.cpu': '2',
                          'limits.memory': '1GB'},
               'type': 'virtual-machine'}
@@ -67,13 +67,14 @@ if __name__ == '__main__':
         parser.add_argument('--cleanup', action='store_true')
         parser.add_argument('--spines', type=int, default=2)
         parser.add_argument('--leafs', type=int, default=3)
+        parser.add_argument('--image', type=str, default='debian/12')
         args = parser.parse_args()
 
         if args.create:
             for i in range(args.spines):
-                create_node(client, 'spine', log)
+                create_node(client, 'spine', args.image, log)
             for i in range(args.leafs):
-                create_node(client, 'leaf', log)
+                create_node(client, 'leaf', args.image, log)
         elif args.cleanup:
             cleanup(client, log)
 

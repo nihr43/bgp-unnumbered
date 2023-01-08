@@ -17,8 +17,17 @@ def cleanup(client, log, pylxd):
             i.stop(wait=True)
         except pylxd.exceptions.LXDAPIException:
             pass
-        i.delete()
+        i.delete(wait=True)
         log.info(i.name + ' deleted')
+
+    networks = client.networks.all()
+    for n in networks:
+        try:
+            if n.description == 'bgp-unnumbered':
+                n.delete(wait=True)
+                log.info(n.name + ' deleted')
+        except pylxd.exceptions.NotFound:
+            pass
 
 
 def create_node(client, name, image, log):

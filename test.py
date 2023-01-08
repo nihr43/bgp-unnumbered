@@ -4,7 +4,7 @@ import uuid
 import time
 
 
-def cleanup(client, log):
+def cleanup(client, log, pylxd):
     instances_to_delete = []
     for i in client.instances.all():
         if i.name.startswith('bgp-unnumbered-'):
@@ -12,7 +12,10 @@ def cleanup(client, log):
             instances_to_delete.append(i)
 
     for i in instances_to_delete:
-        i.stop(wait=True)
+        try:
+            i.stop(wait=True)
+        except pylxd.exceptions.LXDAPIException:
+            pass
         i.delete()
         log.info(i.name + ' deleted')
 
@@ -76,6 +79,6 @@ if __name__ == '__main__':
             for i in range(args.leafs):
                 create_node(client, 'leaf', args.image, log)
         elif args.cleanup:
-            cleanup(client, log)
+            cleanup(client, log, pylxd)
 
     privileged_main()

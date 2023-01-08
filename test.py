@@ -104,8 +104,12 @@ def create_bridge(client, inst_a, inst_b, log):
     '''
     eth_id = random.randint(10, 9999)
     ethname = 'eth' + str(eth_id)
-    inst_a.devices[ethname] = {'name': ethname, 'network': name, 'type': 'nic'}
-    inst_b.devices[ethname] = {'name': ethname, 'network': name, 'type': 'nic'}
+    # lxd manipulates linux bridges on our behalf.
+    # for linux bridges to behave as 802.1q trunks, vlan_filtering needs
+    # enabled and desired vids need added to the bridge and the taps.
+    # vlan.tagged does this for us.  you can check its effect with `bridge vlan show`
+    inst_a.devices[ethname] = {'name': ethname, 'network': name, 'type': 'nic', 'vlan.tagged': '10'}
+    inst_b.devices[ethname] = {'name': ethname, 'network': name, 'type': 'nic', 'vlan.tagged': '10'}
     inst_a.save(wait=True)
     inst_b.save(wait=True)
 

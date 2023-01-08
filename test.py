@@ -46,17 +46,23 @@ def create_node(client, name, image, log):
     inst.start(wait=True)
     wait_until_ready(inst, log)
     err = inst.execute(['apt', 'install', 'wget', 'python3', 'openssh-server', '-y'])
+    log.info(err.stdout)
     if err.exit_code != 0:
-        log.info('failed to install openssh-server')
+        log.info(err.stderr)
         exit(1)
     err = inst.execute(['mkdir', '-p', '/root/.ssh'])
+    log.info(err.stdout)
     if err.exit_code != 0:
         log.info('failed to mkdir /root/.ssh')
+        log.info(err.stderr)
         exit(1)
     err = inst.execute(['wget', 'https://github.com/nihr43.keys', '-O', '/root/.ssh/authorized_keys'])
+    log.info(err.stdout)
     if err.exit_code != 0:
-        log.info('failed to fetch authorized_keys')
+        log.info(err.stderr)
         exit(1)
+    # wow! subsequent reboots in network configuration were borking our ssh installation/configuration
+    inst.execute(['sync'])
     return inst
 
 

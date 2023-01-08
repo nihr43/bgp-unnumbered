@@ -14,11 +14,33 @@
    dest: /etc/systemd/network/00_loopback.network
   register: loopback
 
-- name: configure interfaces participating in bgp
+- name: declare interfaces list
+  set_fact:
+    interfaces: []
+
+- name: reconcile interfaces to configure
+  set_fact:
+    interfaces: '{{interfaces + [item]}}'
+  loop: "{{ansible_interfaces}}"
+  when: "item not in reserved_ports and item|regex_search(\"^enp\") or item|regex_search(\"^eno\") or item|regex_search(\"^eth\")"
+
+- name: configure physical interfaces on which to run bgpvlan
   template:
-   src: bgp_interfaces.network
-   dest: /etc/systemd/network/01_bgp_interfaces.network
-  register: interfaces
+   src: bgpvlan_hw.network
+   dest: /etc/systemd/network/01_bgpvlan_{{item}}_hw.network
+  loop: "{{interfaces}}"
+
+- name: create bgpvlan virtual interfaces
+  template:
+   src: bgpvlan.netdev
+   dest: /etc/systemd/network/01_bgpvlan_{{item}}.netdev
+  loop: "{{interfaces}}"
+
+- name: configure bgpvlan virtual interfaces
+  template:
+   src: bgpvlan.network
+   dest: /etc/systemd/network/01_bgpvlan_{{item}}.network
+  loop: "{{interfaces}}"
 
 - name: enable systemd-networkd
   service:
@@ -73,4 +95,4 @@
 
 - name: reboot
   reboot:
-  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or interfaces.changed or sysctl.changed or loopback.changed )"
+  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or sysctl.changed or loopback.changed )"

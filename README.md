@@ -76,6 +76,30 @@ Resulting in a device where I can simply plug-and-play on any port:
      network 10.0.254.254/32
 ```
 
+## BGP over an 802.1q tagged link layer
+
+Dec. 2022
+
+Even in the presence of the "perfect" datacenter fabric - its still nice to have basic dhcp-enabled l2 access in a rack.  Most commonly known as the "management network".
+For example, with the way I use the debian preseeder - unpovisioned hosts need to be able to access apt repositories to download frr in the first place.
+
+In order to implement a "dumb" management network while still meeting the goal of "no broadcast domains spanning more than one rack", I've elected to move all l3 bgp-enabled links to an 802.1q tagged namespace.  (I use this language because it wouldn't quite be accurate to think of these links as members of "a vlan").
+Doing so allows top-of-rack spine router ports to serve dual-purpose - from the untagged perspective, each port is running its own dhcpd service, for its own psuedo-random rfc1918 network, of which it is the default gateway.  From the tagged perspective - frr its configured to listen on vlan 10 tagged vitual interfaces.
+
+This is indeed one more layer of complexity, but it is very easy to template this all out with systemd-networkd and ansible.
+
+The end result - unconfigured or otherwise "dumb" devices can be plugged into any spine router port and get an ip, while configured servers and routers can use the same physical ports to participate in the multi-path routed "fabric".
+
+Note, it was a quite intentional decision not to simply bridge all the untagged ports, but to provision 'n' throwaway dhcpd intances and networks - in order to keep them all isolated from a link-layer perspective.  Bridging them would un-solve the l2 problems we're trying to avoid in the first place - for example making the datacenter fabric susceptible to broadcast storms happening in the management network.
+
+Also note, our untagged physical ports are technically no longer "unnumbered".  Though, there isn't really a reason to know or care what these IPs actually are - other than the range that is being used.
+With the range in mind, we can go template out any firewall rules deemed appropriate to keep managment traffic out of dc fabric ranges, and deploy that to the routers.
+Admittedly, my logic doesn't check for collisions when coming up with IPs to provision, but this is a solvable problem.
+
+The next step is to integrate pxe infrastructure with the dhcpd servers on the spines, allowing a fresh server to be plugged into each spine, boot installation media from pxe, perform a self-install, and then reboot and begin bgp peering.
+
+This method of using the untagged vlan as l2 access in a bgp-to-the-host environment was not an idea of my own, but came from an anecdote i read on a network engineering forum years ago - i dont remember exactly where.
+
 ## L2 overlays with BGP EVPN
 
 BGP is capable of dynamically propogating vni endponts for establishing unicast vxlans.

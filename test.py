@@ -50,7 +50,7 @@ def wait_until_ready(instance, log):
             log.info('timed out waiting')
             exit(1)
         log.info('waiting for lxd agent on ' + instance.name)
-        time.sleep(2)
+        time.sleep(3)
 
 
 if __name__ == '__main__':
@@ -59,8 +59,7 @@ if __name__ == '__main__':
         import logging
         import argparse
 
-        logging.basicConfig(level=logging.INFO,
-                            format='%(funcName)s(): %(message)s')
+        logging.basicConfig(format='%(funcName)s(): %(message)s')
         log = logging.getLogger(__name__)
         log.setLevel(logging.INFO)
         client = pylxd.Client()

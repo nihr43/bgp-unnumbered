@@ -125,6 +125,24 @@ def create_bridge(client, inst_a, inst_b, log):
     inst_b.save(wait=True)
 
 
+def run_tests(client, log):
+    log.info('running regression tests')
+    routers = [i for i in client.instances.all()
+               if i.description == 'bgp-unnumbered']
+
+    for i in routers:
+        log.info('found router ' + i.name + ' ip ' + i.state().network['lo']['addresses'][1]['address'])
+
+    for i in routers:
+        for j in routers:
+            err = i.execute(['ping', '-c1', '-W1', j.state().network['lo']['addresses'][1]['address']])
+            log.info('recursive ping: ' + i.name + ' -> ' + j.name)
+            if err.exit_code != 0:
+                log.info('recursive ping: ' + i.name + ' -> ' + j.name + ' failed')
+                log.info(err.stderr)
+                exit(1)
+
+
 if __name__ == '__main__':
     def privileged_main():
         import pylxd
@@ -147,6 +165,7 @@ if __name__ == '__main__':
         parser.add_argument('--leafs', '-l', type=int, default=3,
                             help='Number of leafs to provision')
         parser.add_argument('--image', type=str, default='debian/12')
+        parser.add_argument('--run-tests', action='store_true')
         args = parser.parse_args()
 
         if args.cleanup:
@@ -198,5 +217,7 @@ if __name__ == '__main__':
 
             log.info('environment created.  follow-up configuration can be performed with:')
             print('ansible-playbook main.yml -i virtual.inventory')
+        elif args.run_tests:
+            run_tests(client, log)
 
     privileged_main()

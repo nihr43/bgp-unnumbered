@@ -10,6 +10,148 @@ From a high-level management aspect, this is an attractive concept because the t
 
 I am far from the first person to build such a thing, though this is sort of a darker magic that is difficult to piece together.  [Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.
 
+## usage
+
+*jan 2023*
+
+To enable development and testing independent of the physical network, a reproducable virtual environment is provided via `test.py`.
+This environment uses lxd virtual machines with point-to-point linux bridges behaving as virtual 'cables' between individual routers.  Each leaf is programmatically connected to each spine.
+
+```
+$ ./test.py -h
+usage: test.py [-h] [--create] [--cleanup] [--spines SPINES] [--leafs LEAFS] [--image IMAGE]
+
+options:
+  -h, --help            show this help message and exit
+  --create
+  --cleanup
+  --spines SPINES, -s SPINES
+                        Number of spines to provision
+  --leafs LEAFS, -l LEAFS
+                        Number of leafs to provision
+  --image IMAGE
+```
+
+To provision 2 spines and 3 leafs:
+
+```
+$ ./test.py --create -s 2 -l 3
+create_node(): creating node bgp-unnumbered-spine-ebb40
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-spine-ebb40
+...
+create_bridge(): creating network ebb40-15492
+create_bridge(): creating network bd5c2-15492
+create_bridge(): creating network ebb40-2542b
+create_bridge(): creating network bd5c2-2542b
+create_bridge(): creating network ebb40-6ea34
+create_bridge(): creating network bd5c2-6ea34
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-spine-ebb40
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-spine-bd5c2
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-15492
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-2542b
+wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-6ea34
+privileged_main(): environment created.  to finish provisioning routers run the following:
+privileged_main(): ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root
+```
+
+The tool creates an ansible inventory file ready for us to use:
+
+```
+$ cat virtual.inventory 
+[spine]
+10.139.0.137 router_ip=10.0.254.25 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.121 router_ip=10.0.254.139 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+
+[leaf]
+10.139.0.180 router_ip=10.0.200.81 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.222 router_ip=10.0.200.34 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.160 router_ip=10.0.200.165 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+```
+
+Currently the tool does not provision the ansible side of things on its own, but it did print a command for us to copy-paste:
+
+```
+$ ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root
+
+PLAY [spine] ****************************************************************************************************************************************
+
+TASK [Gathering Facts] ******************************************************************************************************************************
+ok: [10.139.0.121]
+ok: [10.139.0.137]
+
+TASK [frr : install tools] **************************************************************************************************************************
+changed: [10.139.0.121]
+changed: [10.139.0.137]
+
+TASK [frr : ensure absence of classic /etc/network/interfaces] **************************************************************************************
+changed: [10.139.0.137]
+changed: [10.139.0.121]
+
+TASK [frr : set loopback ip] ************************************************************************************************************************
+changed: [10.139.0.137]
+changed: [10.139.0.121]
+...
+```
+
+When ansible is finished, our virtual routers should be peering with eachother:
+
+```
+$ lxc exec bgp-unnumbered-leaf-2542b -- vtysh <<<'show ip bgp'
+...
+BGP table version is 6, local router ID is 10.0.200.34, vrf id 0
+Default local pref 100, local AS 65238
+Status codes:  s suppressed, d damped, h history, * valid, > best, = multipath,
+               i internal, r RIB-failure, S Stale, R Removed
+Nexthop codes: @NNN nexthop's vrf id, < announce-nh-self
+Origin codes:  i - IGP, e - EGP, ? - incomplete
+RPKI validation codes: V valid, I invalid, N Not found
+
+   Network          Next Hop            Metric LocPrf Weight Path
+*> 10.0.200.34/32   0.0.0.0(bgp-unnumbered-leaf-2542b)
+                                             0         32768 ?
+*> 10.0.200.81/32   bgpenp7s0                              0 64760 64791 ?
+*=                  bgpenp6s0                              0 65009 64791 ?
+*> 10.0.200.165/32  bgpenp7s0                              0 64760 64600 ?
+*=                  bgpenp6s0                              0 65009 64600 ?
+*> 10.0.254.25/32   bgpenp7s0                0             0 64760 ?
+*> 10.0.254.139/32  bgpenp6s0                0             0 65009 ?
+*> 10.139.0.0/24    0.0.0.0(bgp-unnumbered-leaf-2542b)
+                                          1024         32768 ?
+
+Displayed  6 routes and 8 total paths
+```
+
+And here are the installed routes:
+
+```
+$ lxc exec bgp-unnumbered-leaf-2542b -- ip route
+default via 10.139.0.1 dev enp5s0 proto dhcp src 10.139.0.222 metric 1024
+10.0.200.81 nhid 39 proto bgp metric 20
+	nexthop via inet6 fe80::216:3eff:fe7e:9c73 dev bgpenp6s0 weight 1
+	nexthop via inet6 fe80::216:3eff:fed6:14bb dev bgpenp7s0 weight 1
+10.0.200.165 nhid 39 proto bgp metric 20
+	nexthop via inet6 fe80::216:3eff:fe7e:9c73 dev bgpenp6s0 weight 1
+	nexthop via inet6 fe80::216:3eff:fed6:14bb dev bgpenp7s0 weight 1
+10.0.254.25 nhid 32 via inet6 fe80::216:3eff:fed6:14bb dev bgpenp7s0 proto bgp metric 20
+10.0.254.139 nhid 24 via inet6 fe80::216:3eff:fe7e:9c73 dev bgpenp6s0 proto bgp metric 20
+```
+
+Delete the environment with `--clean`:
+
+```
+$ ./test.py --clean
+cleanup(): bgp-unnumbered-spine-821a1 deleted
+cleanup(): bgp-unnumbered-leaf-ee4e0 deleted
+cleanup(): bgp-unnumbered-spine-020cd deleted
+cleanup(): bgp-unnumbered-spine-2cf9d deleted
+cleanup(): 2cf9d-c253e deleted
+cleanup(): 4cf58-2ace1 deleted
+cleanup(): 5a73e-770c2 deleted
+cleanup(): ebb40-15492 deleted
+cleanup(): ebb40-2542b deleted
+cleanup(): ebb40-6ea34 deleted
+```
+
 ## Components
 
 This example uses Debian and FRR.  The basic components follow.

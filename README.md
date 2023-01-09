@@ -611,3 +611,22 @@ rtt min/avg/max/mdev = 0.429/0.520/0.578/0.055 ms
 While routing iperf traffic, the D525 reaches a maximum utilization of roughly 10% of one cpu core.
 
 The x86 router appears to offer similar bandwidth to the switch, and about double the latency.  Packets per second will suffer compared to a router with purpose-built hardware.
+
+## virtual performance
+
+my assumption is that the forwarding performance of the virtual implementation is highly bound to memory bandwidth.  heres iperf from one leaf to another in the virtualenv.py environment, ecmp enabled, on a ryzen 5600x with 2666mhz udimms populating both channels.  both the host and the VMs are running kernel `6.0.0-6-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.0.12-1`.  subsequent runs were consistently between 24-25 gbps.  without any context this is quite an impressive number considering how many memory hops are being made; i'll have to measure this again if i ever put 3200mhz udimms in this machine.
+
+```
+root@bgp-leaf-dc2a4:~# iperf -c 10.0.200.26 -P2 -t10
+------------------------------------------------------------
+Client connecting to 10.0.200.26, TCP port 5001
+TCP window size: 16.0 KByte (default)
+------------------------------------------------------------
+[  2] local 10.0.200.17 port 49986 connected with 10.0.200.26 port 5001 (icwnd/mss/irtt=87/8948/457)
+[  1] local 10.0.200.17 port 49994 connected with 10.0.200.26 port 5001 (icwnd/mss/irtt=87/8948/420)
+[ ID] Interval       Transfer     Bandwidth
+[  1] 0.0000-10.0137 sec  14.6 GBytes  12.5 Gbits/sec
+[  2] 0.0000-10.0137 sec  14.4 GBytes  12.4 Gbits/sec
+[SUM] 0.0000-10.0002 sec  29.0 GBytes  24.9 Gbits/sec
+[ CT] final connect times (min/avg/max/stdev) = 0.442/0.469/0.496/38.184 ms (tot/err) = 2/0
+```

@@ -136,9 +136,23 @@ def run_tests(client, log):
     for i in routers:
         for j in routers:
             err = i.execute(['ping', '-c1', '-W1', j.state().network['lo']['addresses'][1]['address']])
-            log.info('recursive ping: ' + i.name + ' -> ' + j.name)
+            log.info('icmp: ' + i.name + ' -> ' + j.name)
             if err.exit_code != 0:
                 log.info('recursive ping: ' + i.name + ' -> ' + j.name + ' failed')
+                log.info(err.stderr)
+                exit(1)
+
+    for i in routers:
+        err = i.execute(['iperf', '-sD'])
+        if err.exit_code != 0:
+            log.info(err.stderr)
+            exit(1)
+        for j in routers:
+            err = i.execute(['iperf', '-c', j.state().network['lo']['addresses'][1]['address'], '-t1', '-P2'])
+            log.info('iperf: ' + i.name + ' -> ' + j.name)
+            log.info(err.stdout)
+            if err.exit_code != 0:
+                log.info('iperf: ' + i.name + ' -> ' + j.name + ' failed')
                 log.info(err.stderr)
                 exit(1)
 

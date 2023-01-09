@@ -12,8 +12,7 @@ I am far from the first person to build such a thing, though this is sort of a d
 
 *jan 2023*
 
-To enable development and testing independent of the physical network, a reproducable virtual environment is provided via `virtualenv.py`.
-This environment uses lxd virtual machines with point-to-point linux bridges behaving as virtual 'cables' between individual routers.  Each leaf is programmatically connected to each spine.
+To enable development and regression testing independent of physical infrastructure, a reproducable virtual environment is provided via `virtualenv.py`.  This tool creates the entire network from scratch, using lxd virtual machines as routers with point-to-point linux bridges behaving as virtual 'cables'.  Each leaf is programmatically connected to each spine with a dedicated link.
 
 ```
 $ ./virtualenv.py -h
@@ -150,70 +149,129 @@ cleanup(): ebb40-2542b deleted
 cleanup(): ebb40-6ea34 deleted
 ```
 
-## Components
+## implementation
 
-This example uses Debian and FRR.  The basic components follow.
+The most effective way to describe this architecture is perhaps to link directly to the configuration.  The fundamental components are:
 
-A loopback /32 ip, and one or more unnumbered "up" interfaces:
+- a [/32 loopback ip](roles/frr/templates/loopback.network) for each host.
+- unnumbered, always-up [vlan interfaces](roles/frr/templates/bgpvlan.network) to run bgp on.  running bgp on tagged frames allows us to use the untagged context for l2 access.
+- [templated frr configuration](roles/frr/templates/frr.conf) instructing bgp to listen on each of the vlan interfaces.
+- routing [enabled in the kernel](roles/frr/templates/local.conf).
 
-```
-auto lo
-iface lo inet loopback
-
-auto lo:10
-iface lo:10 inet static
-    address 10.0.254.254
-    netmask 255.255.255.255
-
-auto enp5s0
-allow-hotplug enp5s0
-iface enp5s0 inet manual
-```
-
-frr configured to peer using interfaces rather than ips:
+An example fully-templated frr spine configuration with four leafs looks like this, as of 68b960f:
 
 ```
-router bgp 64513
-  neighbor enp5s0 interface remote-as external
-  ...
-```
+log file /var/log/frr/frr.log
+frr defaults datacenter
 
-routing enabled in the kernel:
+interface bgpenp6s0
+  ipv6 nd ra-interval 5
+  no ipv6 nd suppress-ra
 
-```
-net.ipv4.conf.all.forwarding=1
-net.ipv6.conf.all.forwarding=1
-```
+interface bgpenp7s0
+  ipv6 nd ra-interval 5
+  no ipv6 nd suppress-ra
 
-Ansible is used to demonstrate the ease of templating such a configuration.  We can easily loop through a list of interfaces and enable bgp:
+interface bgpenp8s0
+  ipv6 nd ra-interval 5
+  no ipv6 nd suppress-ra
 
-```
-router bgp {{ router_as }}
-  bgp router-id {{ router_ip }}
-{% for i in ansible_interfaces|sort %}
-{% if i.startswith('enp') or i.startswith('eno') or i.startswith('eth') %}
-  neighbor {{i}} interface remote-as external
-{% endif %}
-{% endfor %}
+interface bgpenp9s0
+  ipv6 nd ra-interval 5
+  no ipv6 nd suppress-ra
+
+
+router bgp 65095
+  bgp router-id 10.0.254.28
+  bgp fast-convergence
+  bgp bestpath as-path multipath-relax
+  neighbor bgpenp6s0 interface remote-as external
+  neighbor bgpenp6s0 update-source 10.0.254.28
+  neighbor bgpenp6s0 ebgp-multihop
+  neighbor bgpenp7s0 interface remote-as external
+  neighbor bgpenp7s0 update-source 10.0.254.28
+  neighbor bgpenp7s0 ebgp-multihop
+  neighbor bgpenp8s0 interface remote-as external
+  neighbor bgpenp8s0 update-source 10.0.254.28
+  neighbor bgpenp8s0 ebgp-multihop
+  neighbor bgpenp9s0 interface remote-as external
+  neighbor bgpenp9s0 update-source 10.0.254.28
+  neighbor bgpenp9s0 ebgp-multihop
   address-family ipv4 unicast
-    network {{ router_net }}
+    neighbor bgpenp6s0 route-map default in
+    neighbor bgpenp7s0 route-map default in
+    neighbor bgpenp8s0 route-map default in
+    neighbor bgpenp9s0 route-map default in
+    redistribute connected
+  address-family l2vpn evpn
+    neighbor bgpenp6s0 activate
+    neighbor bgpenp7s0 activate
+    neighbor bgpenp8s0 activate
+    neighbor bgpenp9s0 activate
+    advertise-all-vni
+
+ip prefix-list p1 seq 10 permit 10.0.200.0/24 le 32
+ip prefix-list p1 seq 15 permit 10.0.254.0/24 le 32
+ip prefix-list p1 seq 18 permit 10.0.100.0/24 le 32
+ip prefix-list p1 seq 20 permit 172.16.0.0/16
+ip prefix-list p1 seq 25 permit 0.0.0.0/0
+
+route-map default permit 10
+  match ip address prefix-list p1
 ```
 
-Resulting in a device where I can simply plug-and-play on any port:
+That same router's interfaces look llike this:
 
 ```
- router bgp 64513
-   bgp router-id 10.0.254.254
-+  neighbor enp2s4f0 interface remote-as external
-+  neighbor enp2s4f1 interface remote-as external
-+  neighbor enp3s6f0 interface remote-as external
-+  neighbor enp3s6f1 interface remote-as external
-+  neighbor enp3s8f0 interface remote-as external
-+  neighbor enp3s8f1 interface remote-as external
-+  neighbor enp4s0 interface remote-as external
-   neighbor enp5s0 interface remote-as external
-   address-family ipv4 unicast
-     network 10.0.254.254/32
+root@bgp-spine-d18da:~# ip ad
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet 10.0.254.28/32 scope global lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 00:16:3e:82:a2:21 brd ff:ff:ff:ff:ff:ff
+    inet 10.139.0.99/24 metric 1024 brd 10.139.0.255 scope global dynamic enp5s0
+       valid_lft 2875sec preferred_lft 2875sec
+    inet6 fd42:64fd:9854:7831:216:3eff:fe82:a221/64 scope global dynamic mngtmpaddr noprefixroute 
+       valid_lft 3365sec preferred_lft 3365sec
+    inet6 fe80::216:3eff:fe82:a221/64 scope link 
+       valid_lft forever preferred_lft forever
+3: enp6s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 00:16:3e:d6:ca:4c brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fed6:ca4c/64 scope link 
+       valid_lft forever preferred_lft forever
+4: enp7s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 00:16:3e:5a:14:54 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fe5a:1454/64 scope link 
+       valid_lft forever preferred_lft forever
+5: enp8s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 00:16:3e:b8:d1:83 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:feb8:d183/64 scope link 
+       valid_lft forever preferred_lft forever
+6: enp9s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 00:16:3e:49:8a:f8 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fe49:8af8/64 scope link 
+       valid_lft forever preferred_lft forever
+7: bgpenp9s0@enp9s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:16:3e:49:8a:f8 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fe49:8af8/64 scope link 
+       valid_lft forever preferred_lft forever
+8: bgpenp8s0@enp8s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:16:3e:b8:d1:83 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:feb8:d183/64 scope link 
+       valid_lft forever preferred_lft forever
+9: bgpenp7s0@enp7s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:16:3e:5a:14:54 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fe5a:1454/64 scope link 
+       valid_lft forever preferred_lft forever
+10: bgpenp6s0@enp6s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:16:3e:d6:ca:4c brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::216:3eff:fed6:ca4c/64 scope link 
+       valid_lft forever preferred_lft forever
 ```
 
 ## BGP over an 802.1q tagged link layer

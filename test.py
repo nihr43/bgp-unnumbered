@@ -3,11 +3,12 @@
 import uuid
 import time
 import random
+from os import chmod
 
 
 def cleanup(client, log, pylxd):
     instances_to_delete = [i for i in client.instances.all()
-                           if i.name.startswith('bgp-unnumbered-')]
+                           if i.description == 'bgp-unnumbered']
 
     for i in instances_to_delete:
         try:
@@ -27,9 +28,25 @@ def cleanup(client, log, pylxd):
             pass
 
 
-def create_node(client, name, image, log):
-    name = 'bgp-unnumbered-' + name + '-' + str(uuid.uuid4())[0:5]
+def create_keypair(RSA):
+    '''
+    creates ssh keypair for use with ansible
+    returns public key
+    '''
+    key = RSA.generate(4096)
+    with open("./private.key", 'wb') as content_file:
+        chmod("./private.key", 0o600)
+        content_file.write(key.exportKey('PEM'))
+    pubkey = key.publickey()
+    with open("./public.key", 'wb') as content_file:
+        content_file.write(pubkey.exportKey('OpenSSH'))
+    return pubkey
+
+
+def create_node(client, name, image, pubkey, log):
+    name = 'bgp-' + name + '-' + str(uuid.uuid4())[0:5]
     config = {'name': name,
+              'description': 'bgp-unnumbered',
               'source': {'type': 'image',
                          'mode': 'pull',
                          'server': 'https://images.linuxcontainers.org',
@@ -42,7 +59,7 @@ def create_node(client, name, image, log):
     inst = client.instances.create(config, wait=True)
     inst.start(wait=True)
     wait_until_ready(inst, log)
-    err = inst.execute(['apt', 'install', 'wget', 'python3', 'openssh-server', '-y'])
+    err = inst.execute(['apt', 'install', 'python3', 'openssh-server', 'ca-certificates', '-y'])
     log.info(err.stdout)
     if err.exit_code != 0:
         log.info(err.stderr)
@@ -53,11 +70,8 @@ def create_node(client, name, image, log):
         log.info('failed to mkdir /root/.ssh')
         log.info(err.stderr)
         exit(1)
-    err = inst.execute(['wget', 'https://github.com/nihr43.keys', '-O', '/root/.ssh/authorized_keys'])
-    log.info(err.stdout)
-    if err.exit_code != 0:
-        log.info(err.stderr)
-        exit(1)
+
+    inst.files.put('/root/.ssh/authorized_keys', pubkey.exportKey('OpenSSH'))
     # wow! subsequent reboots in network configuration were borking our ssh installation/configuration
     inst.execute(['sync'])
     return inst
@@ -118,6 +132,7 @@ if __name__ == '__main__':
         import argparse
         import ansible_runner
         from jinja2 import Environment, FileSystemLoader
+        from Crypto.PublicKey import RSA
 
         logging.basicConfig(format='%(funcName)s(): %(message)s')
         log = logging.getLogger(__name__)
@@ -137,9 +152,11 @@ if __name__ == '__main__':
         if args.cleanup:
             cleanup(client, log, pylxd)
         elif args.create:
-            spines = [create_node(client, 'spine', args.image, log)
+            pubkey = create_keypair(RSA)
+
+            spines = [create_node(client, 'spine', args.image, pubkey, log)
                       for i in range(args.spines)]
-            leafs = [create_node(client, 'leaf', args.image, log)
+            leafs = [create_node(client, 'leaf', args.image, pubkey, log)
                      for i in range(args.leafs)]
             for i in leafs:
                 try:
@@ -179,7 +196,7 @@ if __name__ == '__main__':
                 playbook='main.yml'
             )
 
-            log.info('environment created.  to finish provisioning routers run the following:')
-            log.info('ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root')
+            log.info('environment created.  follow-up configuration can be performed with:')
+            print('ansible-playbook main.yml -i virtual.inventory')
 
     privileged_main()

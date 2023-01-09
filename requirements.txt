@@ -1,0 +1,4 @@
+pylxd
+pycryptodome
+jinja2
+ansible_runner

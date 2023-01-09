@@ -119,6 +119,7 @@ if __name__ == '__main__':
         import pylxd
         import logging
         import argparse
+        from jinja2 import Environment, FileSystemLoader
 
         logging.basicConfig(format='%(funcName)s(): %(message)s')
         log = logging.getLogger(__name__)
@@ -157,8 +158,22 @@ if __name__ == '__main__':
 
             for i in spines:
                 i.start(wait=True)
+                wait_until_ready(i, log)
 
             for i in leafs:
                 i.start(wait=True)
+                wait_until_ready(i, log)
+
+            env = Environment(
+                loader=FileSystemLoader('templates')
+            )
+
+            template = env.get_template('virtual-inventory.j2')
+            with open('virtual.inventory', 'w') as inventory:
+                inventory.truncate()
+                inventory.write(template.render(spines=spines, leafs=leafs))
+
+            log.info('environment created.  to finish provisioning routers run the following:')
+            log.info('ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root')
 
     privileged_main()

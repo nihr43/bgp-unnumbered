@@ -133,6 +133,24 @@ default via 10.139.0.1 dev enp5s0 proto dhcp src 10.139.0.222 metric 1024
 10.0.254.139 nhid 24 via inet6 fe80::216:3eff:fe7e:9c73 dev bgpenp6s0 proto bgp metric 20
 ```
 
+Run the regression tests with `--run-tests`:
+
+```
+$ ./virtualenv.py --run-tests
+run_tests(): running regression tests
+run_tests(): found router bgp-spine-d18da ip 10.0.254.28
+run_tests(): found router bgp-spine-3897e ip 10.0.254.76
+run_tests(): found router bgp-leaf-c50dd ip 10.0.200.189
+run_tests(): found router bgp-leaf-8917e ip 10.0.200.54
+run_tests(): found router bgp-leaf-72bf2 ip 10.0.200.26
+run_tests(): found router bgp-leaf-dc2a4 ip 10.0.200.17
+run_tests(): recursive ping: bgp-spine-d18da -> bgp-spine-d18da
+run_tests(): recursive ping: bgp-spine-d18da -> bgp-spine-3897e
+run_tests(): recursive ping: bgp-spine-d18da -> bgp-leaf-c50dd
+run_tests(): recursive ping: bgp-spine-d18da -> bgp-leaf-8917e
+run_tests(): recursive ping: bgp-spine-d18da -> bgp-leaf-72bf2
+```
+
 Delete the environment with `--clean`:
 
 ```

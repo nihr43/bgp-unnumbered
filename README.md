@@ -12,12 +12,12 @@ I am far from the first person to build such a thing, though this is sort of a d
 
 *jan 2023*
 
-To enable development and testing independent of the physical network, a reproducable virtual environment is provided via `test.py`.
+To enable development and testing independent of the physical network, a reproducable virtual environment is provided via `virtualenv.py`.
 This environment uses lxd virtual machines with point-to-point linux bridges behaving as virtual 'cables' between individual routers.  Each leaf is programmatically connected to each spine.
 
 ```
-$ ./test.py -h
-usage: test.py [-h] [--create] [--cleanup] [--spines SPINES] [--leafs LEAFS] [--image IMAGE]
+$ ./virtualenv.py -h
+usage: virtualenv.py [-h] [--create] [--cleanup] [--spines SPINES] [--leafs LEAFS] [--image IMAGE]
 
 options:
   -h, --help            show this help message and exit
@@ -33,7 +33,7 @@ options:
 To provision 2 spines and 3 leafs:
 
 ```
-$ ./test.py --create -s 2 -l 3
+$ ./virtualenv.py --create -s 2 -l 3
 create_node(): creating node bgp-unnumbered-spine-ebb40
 wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-spine-ebb40
 ...
@@ -137,7 +137,7 @@ default via 10.139.0.1 dev enp5s0 proto dhcp src 10.139.0.222 metric 1024
 Delete the environment with `--clean`:
 
 ```
-$ ./test.py --clean
+$ ./virtualenv.py --clean
 cleanup(): bgp-unnumbered-spine-821a1 deleted
 cleanup(): bgp-unnumbered-leaf-ee4e0 deleted
 cleanup(): bgp-unnumbered-spine-020cd deleted

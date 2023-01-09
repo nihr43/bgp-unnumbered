@@ -6,11 +6,8 @@ import random
 
 
 def cleanup(client, log, pylxd):
-    instances_to_delete = []
-    for i in client.instances.all():
-        if i.name.startswith('bgp-unnumbered-'):
-            log.info('found ' + i.name)
-            instances_to_delete.append(i)
+    instances_to_delete = [i for i in client.instances.all()
+                           if i.name.startswith('bgp-unnumbered-')]
 
     for i in instances_to_delete:
         try:

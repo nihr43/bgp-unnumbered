@@ -116,6 +116,7 @@ if __name__ == '__main__':
         import pylxd
         import logging
         import argparse
+        import ansible_runner
         from jinja2 import Environment, FileSystemLoader
 
         logging.basicConfig(format='%(funcName)s(): %(message)s')
@@ -171,6 +172,12 @@ if __name__ == '__main__':
             with open('virtual.inventory', 'w') as inventory:
                 inventory.truncate()
                 inventory.write(template.render(spines=spines, leafs=leafs))
+
+            ansible_runner.run(
+                private_data_dir='./',
+                inventory='virtual.inventory',
+                playbook='main.yml'
+            )
 
             log.info('environment created.  to finish provisioning routers run the following:')
             log.info('ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root')

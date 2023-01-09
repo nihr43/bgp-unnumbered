@@ -48,29 +48,7 @@ wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-spin
 wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-15492
 wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-2542b
 wait_until_ready(): waiting for lxd agent to become ready on bgp-unnumbered-leaf-6ea34
-privileged_main(): environment created.  to finish provisioning routers run the following:
-privileged_main(): ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root
-```
-
-The tool creates an ansible inventory file ready for us to use:
-
-```
-$ cat virtual.inventory 
-[spine]
-10.139.0.137 router_ip=10.0.254.25 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
-10.139.0.121 router_ip=10.0.254.139 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
-
-[leaf]
-10.139.0.180 router_ip=10.0.200.81 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
-10.139.0.222 router_ip=10.0.200.34 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
-10.139.0.160 router_ip=10.0.200.165 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
-```
-
-Currently the tool does not provision the ansible side of things on its own, but it did print a command for us to copy-paste:
-
-```
-$ ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root
-
+...
 PLAY [spine] ****************************************************************************************************************************************
 
 TASK [Gathering Facts] ******************************************************************************************************************************
@@ -89,9 +67,31 @@ TASK [frr : set loopback ip] ***************************************************
 changed: [10.139.0.137]
 changed: [10.139.0.121]
 ...
+privileged_main(): environment created.  to issue subsequent ansible runs:
+privileged_main(): ANSIBLE_HOST_KEY_CHECKING=false ansible-playbook main.yml -i virtual.inventory -u root
 ```
 
-When ansible is finished, our virtual routers should be peering with eachother:
+The tool uses ansible to complete setup within the VMs.  It also leaves behind an inventory file:
+
+```
+$ cat virtual.inventory
+[spine]
+10.139.0.137 router_ip=10.0.254.25 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.121 router_ip=10.0.254.139 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+
+[leaf]
+10.139.0.180 router_ip=10.0.200.81 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.222 router_ip=10.0.200.34 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+10.139.0.160 router_ip=10.0.200.165 router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false
+```
+
+This inventory can be used for subsequent ansible runs:
+
+```
+$ ansible-playbook main.yml -i virtual.inventory
+```
+
+When provisioning is done, our virtual routers should be peering with eachother:
 
 ```
 $ lxc exec bgp-unnumbered-leaf-2542b -- vtysh <<<'show ip bgp'

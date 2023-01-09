@@ -90,7 +90,7 @@ def create_bridge(client, inst_a, inst_b, log):
               'ipv6.address': 'none',
               'bridge.mtu': '9000'}
     name = inst_a.name[-5:] + '-' + inst_b.name[-5:]
-    log.info('creating cable ' + name)
+    log.info('creating network ' + name)
     client.networks.create(name, description='bgp-unnumbered', config=config)
     '''
     qemu appears to use this 'eth' number to enumerate the pci ids.
@@ -126,8 +126,10 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser()
         parser.add_argument('--create', action='store_true')
         parser.add_argument('--cleanup', action='store_true')
-        parser.add_argument('--spines', '-s', type=int, default=2)
-        parser.add_argument('--leafs', '-l', type=int, default=3)
+        parser.add_argument('--spines', '-s', type=int, default=2,
+                            help='Number of spines to provision')
+        parser.add_argument('--leafs', '-l', type=int, default=3,
+                            help='Number of leafs to provision')
         parser.add_argument('--image', type=str, default='debian/12')
         args = parser.parse_args()
 

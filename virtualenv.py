@@ -3,6 +3,7 @@
 import uuid
 import time
 import random
+import re
 from os import chmod
 
 
@@ -133,6 +134,7 @@ def run_tests(client, log):
     for i in routers:
         log.info('found router ' + i.name + ' ip ' + i.state().network['lo']['addresses'][1]['address'])
 
+    # each router should be able to reach every other router via icmp
     for i in routers:
         for j in routers:
             err = i.execute(['ping', '-c1', '-W1', j.state().network['lo']['addresses'][1]['address']])
@@ -142,12 +144,15 @@ def run_tests(client, log):
                 log.info(err.stderr)
                 exit(1)
 
+    # start an iperf daemon on each router, and then measure bandwidth for every device combination
     for i in routers:
         err = i.execute(['iperf', '-sD'])
         if err.exit_code != 0:
             log.info(err.stderr)
             exit(1)
 
+    # measure bandwidth between each node. vm-to-vm traffic should easily be above 10gbps.
+    # less than 10 indicates an issue; bridge.mtu 6666 for example causes this test to fail
     for i in routers:
         for j in routers:
             err = i.execute(['iperf', '-c', j.state().network['lo']['addresses'][1]['address'], '-t1', '-P2'])
@@ -159,6 +164,14 @@ def run_tests(client, log):
                 exit(1)
             elif 'tcp connect failed' in err.stderr:
                 log.info(err.stderr)
+                exit(1)
+            regex = re.compile(r'^\[SUM\].* ([0-9]{1,3}\.?[0-9]?) Gbits\/sec', re.MULTILINE)
+            gigabits = regex.findall(err.stdout)
+            if len(gigabits) == 0:
+                log.info('error fetching iperf output. is the bandwidth < 1 Gbit?')
+                exit(1)
+            if int(float(gigabits[0])) < 10:
+                log.info('iperf ' + i.name + ' -> ' + j.name + ' bandwidth failure')
                 exit(1)
 
 

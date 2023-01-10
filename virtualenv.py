@@ -147,12 +147,17 @@ def run_tests(client, log):
         if err.exit_code != 0:
             log.info(err.stderr)
             exit(1)
+
+    for i in routers:
         for j in routers:
             err = i.execute(['iperf', '-c', j.state().network['lo']['addresses'][1]['address'], '-t1', '-P2'])
             log.info('iperf: ' + i.name + ' -> ' + j.name)
             log.info(err.stdout)
             if err.exit_code != 0:
                 log.info('iperf: ' + i.name + ' -> ' + j.name + ' failed')
+                log.info(err.stderr)
+                exit(1)
+            elif 'tcp connect failed' in err.stderr:
                 log.info(err.stderr)
                 exit(1)
 

@@ -209,20 +209,17 @@ if __name__ == '__main__':
                       for i in range(args.spines)]
             leafs = [create_node(client, 'leaf', args.image, pubkey, log)
                      for i in range(args.leafs)]
-            for i in leafs:
+            for leafs in leafs:
                 try:
-                    i.stop(wait=True)
+                    leaf.stop(wait=True)
                 except:
                     pass
-                for s in spines:
+                for spine in spines:
                     try:
-                        s.stop(wait=True)
+                        spine.stop(wait=True)
                     except:
                         pass
-                    # create_bridge mutates the state on the remote, so we need to refresh with each iteration
-                    leaf = client.instances.get(i.name)
-                    spine = client.instances.get(s.name)
-                    create_bridge(client, spine, leaf, log)
+                    create_bridge(client, leaf, spine, log)
 
             for i in spines:
                 i.start(wait=True)

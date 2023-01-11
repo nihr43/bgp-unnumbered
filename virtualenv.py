@@ -14,8 +14,12 @@ def cleanup(client, log, pylxd):
     for i in instances_to_delete:
         try:
             i.stop(wait=True)
-        except pylxd.exceptions.LXDAPIException:
-            pass
+        except pylxd.exceptions.LXDAPIException as lxdapi_exception:
+            if str(lxdapi_exception) == 'The instance is already stopped':
+                pass
+            else:
+                log.info(lxdapi_exception)
+                exit(1)
         i.delete(wait=True)
         log.info(i.name + ' deleted')
 

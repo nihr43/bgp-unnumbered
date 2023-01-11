@@ -6,7 +6,6 @@ The primary motivation for implementing BGP-to-the-host for compute or storage n
 
 [BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is a novel implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  Combined with Ipv6 link-local neighbor discovery, this enables autodiscovery of BGP peers in a fashion analogous to ARP on an l2 network.
 
-I am far from the first person to build such a thing, though this is sort of a darker magic that is difficult to piece together.  [Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.
 
 ## usage
 
@@ -307,8 +306,6 @@ This is indeed one more layer of complexity, but it is very easy to template thi
 
 The end result - unconfigured or otherwise "dumb" devices can be plugged into any spine router port and get an ip, while configured servers and routers can use the same physical ports to participate in the multi-path routed "fabric".
 
-Note, it was a quite intentional decision not to simply bridge all the untagged ports, but to provision 'n' throwaway dhcpd intances and networks - in order to keep them all isolated from a link-layer perspective.  Bridging them would un-solve the l2 problems we're trying to avoid in the first place - for example making the datacenter fabric susceptible to broadcast storms happening in the management network.
-
 Also note, our untagged physical ports are technically no longer "unnumbered".  Though, there isn't really a reason to know or care what these IPs actually are - other than the range that is being used.
 With the range in mind, we can go template out any firewall rules deemed appropriate to keep managment traffic out of dc fabric ranges, and deploy that to the routers.
 Admittedly, my logic doesn't check for collisions when coming up with IPs to provision, but this is a solvable problem.
@@ -556,29 +553,7 @@ _gateway                 ether   9e:cb:5b:ec:bc:f8   C                     eth0
 vxlan100-dhcp            ether   00:16:3e:4c:b1:32   C                     eth0
 ```
 
-## North/South vxlan traffic
-
-North / South traffic in and out of the vxlan is something I havent yet found a good solution for.  Since we're using only one of the hypervisors' /24 bridge addresses for the default gateway of the virtual network, if this node is rebooted, the entire segment will lose internet access.
-
-I tried using keepalived on the bridges, but this didn't initially seem to work well with bgp.  I have yet to troubleshoot why.  I may or may not continue to investigate this.
-
-Even if keepalived did work, we have an issue with less-than-ideal routes in and out of the segment.  If gateway 172.16.0.1 happens to exist on hypervisor-0 at a given time, and a vm on hypervisor-1 wants to talk to the internet, the traffic will have to make an extra hop from hypervisor-1, through hypervisor-0, and then to the upstream router.  Perhaps some of this can be alleviated by placing the vxlan gateways on the spines instead of the hypervisors, since all the traffic flows through them anyway.  Even then, we will be limited by the capacity of a single spine for north/south traffic.  It stands to reason that we can't expect to solve all L2 problems, hence the motivation to implement a pure L3 network in the first place.
-
-Perhaps instead of hacking L2 technologies to build some sort of pseudo-highly-available north/south vxlan gateways, we take a software-operator approach.  Consider the following:
-
-- a python or golang daemon on each hypervisor that watches LXD and brings up an ip in the vxlan address space whenever "i become the database-leader".
-- this will take advantage of LXD's dqlite CP properties; we will not enter a split brain.
-- this will take advantage of our BGP configuration; when a node assumes an address, it will start advertising that network.
-- when a node that previously had the gateway address finds it is no longer the raft master, it will drop the address.
-- tie directly into dqlite on disk, skipping the LXD api.  this will hopefully improve stability and compute efficiency.
-- if dealing with many L2 segments/gateways, hash-map gateways accross online cluster members rather than using the "database-leader".
-- going a step farther, incorporate addresses and physical locations of known instances while choosing a target cluster node for a slight "free" improvement in locality
-
-This approach would afford us a kubernetes-like "eventual availability" quality for our vxlan default gateways, while likely being a bit more robust and fault tolerant than some sort of glued-together assortment of keepalived and virtual routers.
-
-The only thing left would be to implement redundant dhcpd servers, which is an easy task.
-
-_a day later_
+### north / south vxlan traffic
 
 Having read the [nvidia/cumulus document](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-37/Network-Virtualization/Ethernet-Virtual-Private-Network-EVPN/#enable-evpn-between-bgp-neighbors) on evpn implementation, i've learned of the anycast gateway approach.  Upon initial investigation, this appears to sort of work, but I'll have to learn more about how to avoid mac/arp confusion.
 
@@ -649,3 +624,7 @@ TCP window size: 16.0 KByte (default)
 [SUM] 0.0000-10.0002 sec  29.0 GBytes  24.9 Gbits/sec
 [ CT] final connect times (min/avg/max/stdev) = 0.442/0.469/0.496/38.184 ms (tot/err) = 2/0
 ```
+
+## helpful links
+
+[Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.

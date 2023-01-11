@@ -201,11 +201,12 @@ if __name__ == '__main__':
         parser.add_argument('--create', action='store_true')
         parser.add_argument('--cleanup', action='store_true')
         parser.add_argument('--spines', '-s', type=int, default=2,
-                            help='Number of spines to provision')
+                            help='Number of spines to provision. Defaults to 2.')
         parser.add_argument('--leafs', '-l', type=int, default=3,
-                            help='Number of leafs to provision')
+                            help='Number of leafs to provision. Defaults to 3.')
         parser.add_argument('--image', type=str, default='debian/12')
-        parser.add_argument('--run-tests', action='store_true')
+        parser.add_argument('--run-tests', action='store_true',
+                            help='Run interconnectivity regression tests.')
         args = parser.parse_args()
 
         if args.cleanup:

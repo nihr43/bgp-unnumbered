@@ -15,18 +15,19 @@ I am far from the first person to build such a thing, though this is sort of a d
 To enable development and regression testing independent of physical infrastructure, a reproducable virtual environment is provided via `virtualenv.py`.  This tool creates the entire network from scratch, using lxd virtual machines as routers with point-to-point linux bridges behaving as virtual 'cables'.  Each leaf is programmatically connected to each spine with a dedicated link.
 
 ```
-$ ./virtualenv.py -h
-usage: virtualenv.py [-h] [--create] [--cleanup] [--spines SPINES] [--leafs LEAFS] [--image IMAGE]
+$ ./virtualenv.py --help
+usage: virtualenv.py [-h] [--create] [--cleanup] [--spines SPINES] [--leafs LEAFS] [--image IMAGE] [--run-tests]
 
 options:
   -h, --help            show this help message and exit
   --create
   --cleanup
   --spines SPINES, -s SPINES
-                        Number of spines to provision
+                        Number of spines to provision. Defaults to 2.
   --leafs LEAFS, -l LEAFS
-                        Number of leafs to provision
+                        Number of leafs to provision. Defaults to 3.
   --image IMAGE
+  --run-tests           Run interconnectivity regression tests.
 ```
 
 To provision 2 spines and 3 leafs:

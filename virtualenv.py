@@ -217,25 +217,18 @@ if __name__ == '__main__':
                       for i in range(args.spines)]
             leafs = [create_node(client, 'leaf', args.image, pubkey, log)
                      for i in range(args.leafs)]
-            for leafs in leafs:
-                try:
-                    leaf.stop(wait=True)
-                except:
-                    pass
+
+            all_routers = spines + leafs
+            for r in all_routers:
+                r.stop(wait=True)
+
+            for leaf in leafs:
                 for spine in spines:
-                    try:
-                        spine.stop(wait=True)
-                    except:
-                        pass
                     create_bridge(client, leaf, spine, log)
 
-            for i in spines:
-                i.start(wait=True)
-                wait_until_ready(i, log)
-
-            for i in leafs:
-                i.start(wait=True)
-                wait_until_ready(i, log)
+            for r in all_routers:
+                r.start(wait=True)
+                wait_until_ready(r, log)
 
             env = Environment(
                 loader=FileSystemLoader('templates')

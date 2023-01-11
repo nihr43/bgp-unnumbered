@@ -58,16 +58,6 @@
    dest: /etc/sysctl.d/local.conf
   register: sysctl
 
-- name: frr repo key
-  ansible.builtin.apt_key:
-   url: https://deb.frrouting.org/frr/keys.asc
-   state: present
-
-- name: frr repo
-  ansible.builtin.apt_repository:
-   repo: deb https://deb.frrouting.org/frr bullseye frr-stable
-   state: present
-
 - name: install frr
   package: name=frr,frr-pythontools
 

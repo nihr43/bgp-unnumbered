@@ -3,6 +3,11 @@
 - name: install tools
   package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables,gnupg
 
+- name: install rocky packages
+  package:
+   name: systemd-networkd
+  when: ansible_os_family == 'RedHat'
+
 - name: ensure absence of classic /etc/network/interfaces
   file:
    path: /etc/network/interfaces
@@ -42,15 +47,16 @@
    dest: /etc/systemd/network/01_bgpvlan_{{item}}.network
   loop: "{{interfaces}}"
 
+- name: ensure NetworkManager is disabled
+  service:
+   name: NetworkManager
+   enabled: false
+  when: ansible_os_family == 'RedHat'
+
 - name: enable systemd-networkd
   service:
    name: systemd-networkd
    enabled: true
-
-- name: disable classic networking
-  service:
-   name: networking.service
-   enabled: false
 
 - name: configure sysctls
   template:
@@ -59,7 +65,7 @@
   register: sysctl
 
 - name: install frr
-  package: name=frr,frr-pythontools
+  package: name=frr
 
 - name: configure frr
   template:
@@ -67,13 +73,17 @@
    dest: /etc/frr/frr.conf
   register: conf
 
-- name: configure frr daemons
-  template:
-   src: daemons
-   dest: /etc/frr/daemons
-   owner: frr
-   group: frr
-   mode: 0640
+- name: enable bgp
+  ansible.builtin.lineinfile:
+   path: /etc/frr/daemons
+   regexp: '^bgpd='
+   line: bgpd=yes
+
+- name: set ecmp path count
+  ansible.builtin.lineinfile:
+   path: /etc/frr/daemons
+   regexp: '^bgpd_options='
+   line: bgpd_options="   -A 127.0.0.1 --ecmp 2"
   register: daemons
 
 - name: enable frr

@@ -145,7 +145,7 @@ def run_tests(client, log):
                 err = i.execute(['ping', '-c1', '-W1', j.state().network['lo']['addresses'][1]['address']])
                 log.info('icmp: ' + i.name + ' -> ' + j.name)
                 if err.exit_code != 0:
-                    log.info('recursive ping: ' + i.name + ' -> ' + j.name + ' failed')
+                    log.info('icmp: ' + i.name + ' -> ' + j.name + ' failed')
                     log.info(err.stderr)
                     exit(1)
 

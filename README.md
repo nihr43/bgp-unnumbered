@@ -625,6 +625,22 @@ TCP window size: 16.0 KByte (default)
 [ CT] final connect times (min/avg/max/stdev) = 0.442/0.469/0.496/38.184 ms (tot/err) = 2/0
 ```
 
+heres another test on the same machine with only one memory channel populated.  no significant change:
+
+```
+root@bgp-leaf-0e984:~# iperf -c 10.0.200.168 -P2 -t10
+------------------------------------------------------------
+Client connecting to 10.0.200.168, TCP port 5001
+TCP window size: 16.0 KByte (default)
+------------------------------------------------------------
+[  2] local 10.0.200.30 port 56692 connected with 10.0.200.168 port 5001 (icwnd/mss/irtt=87/8948/319)
+[  1] local 10.0.200.30 port 56708 connected with 10.0.200.168 port 5001 (icwnd/mss/irtt=87/8948/300)
+[ ID] Interval       Transfer     Bandwidth
+[  1] 0.0000-10.0170 sec  14.3 GBytes  12.3 Gbits/sec
+[  2] 0.0000-10.0170 sec  14.3 GBytes  12.3 Gbits/sec
+[SUM] 0.0000-10.0002 sec  28.6 GBytes  24.6 Gbits/sec
+```
+
 ## helpful links
 
 [Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.

@@ -1,11 +1,12 @@
 # bgp-unnumbered
 
-This repository serves as both a reference implementation of BGP unnumbered routing on linux, and as a configuration source for a number of my own physical hosts.
+This repository serves as a reference implementation of BGP unnumbered routing on linux.
 
-The primary motivation for implementing BGP-to-the-host for compute or storage nodes is to maximize the utilization and fault tolerance of all available network links - while ultimately simplifying the datacenter as a whole.  BGP gives us true multipathing and failover without any L2 'hacks' such as STP, LACP, MLAG, etc.  The classic answer as to 'why not' (beside of course; self-inflicted organizational boundaries) is that configuration of individual l2 links, bgp sessions, and peers for n^2+ hosts would be far too much toil to be worthwhile.  The bgp-unnumbered method - implemented with modern configuration management - solves this problem.
+The primary motivation for implementing BGP-to-the-host for compute or storage nodes is to maximize the utilization and fault tolerance of all available network links - while ultimately simplifying the datacenter as a whole.  BGP gives us true multipathing and failover without any L2 'hacks' such as STP, LACP, MLAG, etc.  The classic answer as to 'why not' is that 'routing is too complicated'.  The unnumbered method - implemented with modern configuration management - significantly lowers the barrier to entry for modern network designs.
 
-[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is a novel implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  Combined with Ipv6 link-local neighbor discovery, this enables autodiscovery of BGP peers in a fashion analogous to ARP on an l2 network.
+[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  Combined with Ipv6 link-local neighbor discovery, this enables autodiscovery of BGP peers in a fashion analogous to ARP on an l2 network.  What this means is that IP addresses in this environment are assigned to servers, not interfaces, and there are no network switches to speak of.
 
+Outside of the datacenter (dare i say, at the 'edge') - this approach enables some capabilities that switches dont give you.  Lets say you have a small k8s, ceph, gluster, slurm, etc. cluster for which you have a need for ultra-high inter-node bandwidth.  With unnumbered BGP, it would be trivial to toss in some high-bandwidth network cards and implement a full mesh, or cisco 'stack' style ring network backplane.
 
 ## usage
 

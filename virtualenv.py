@@ -95,7 +95,12 @@ def wait_until_ready(instance, log):
     log.info('waiting for lxd agent to become ready on ' + instance.name)
     count = 30
     for i in range(count):
-        if instance.execute(['hostname']).exit_code == 0:
+        try:
+            exit_code = instance.execute(['hostname']).exit_code
+        except BrokenPipeError:
+            continue
+
+        if exit_code == 0:
             break
         if i == count-1:
             log.info('timed out waiting')

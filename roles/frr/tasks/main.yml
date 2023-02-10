@@ -1,12 +1,16 @@
 ---
 
-- name: install tools
-  package: name=net-tools,traceroute,ifenslave,bridge-utils,iperf,tcpdump,iptables,gnupg
+- name: install debian tools
+  package: name=net-tools,traceroute,iperf,tcpdump,nmap
+  when: ansible_os_family == 'Debian'
 
 - name: install rocky packages
   package:
-   name: systemd-networkd
+   name: "{{item}}"
   when: ansible_os_family == 'RedHat'
+  with_items:
+   - "epel-release"
+   - "systemd-networkd"
 
 - name: ensure absence of classic /etc/network/interfaces
   file:

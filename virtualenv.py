@@ -64,7 +64,13 @@ def create_node(client, name, image, pubkey, log):
     inst = client.instances.create(config, wait=True)
     inst.start(wait=True)
     wait_until_ready(inst, log)
-    err = inst.execute(['apt', 'install', 'python3', 'openssh-server', 'ca-certificates', '-y'])
+
+    if 'rocky' in image:
+        pkgm = 'yum'
+    elif 'debian' or 'ubuntu' in image:
+        pkgm = 'apt'
+
+    err = inst.execute([pkgm, 'install', 'python3', 'openssh-server', 'ca-certificates', '-y'])
     log.info(err.stdout)
     if err.exit_code != 0:
         log.info(err.stderr)

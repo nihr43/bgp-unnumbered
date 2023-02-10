@@ -1,5 +1,6 @@
 ---
-
-- name: restart frr
-  service: name=frr state=restarted
-  listen: "restart frr"
+- name: Restart frr
+  ansible.builtin.service:
+    name: frr
+    state: restarted
+  listen: restart frr

@@ -1,102 +1,108 @@
 ---
-
-- name: install debian tools
-  package: name=net-tools,traceroute,iperf,tcpdump,nmap
+- name: Install debian tools
+  ansible.builtin.package:
+    name: net-tools,traceroute,iperf,tcpdump,nmap
   when: ansible_os_family == 'Debian'
 
-- name: install rocky packages
-  package:
-   name: "{{item}}"
+- name: Install rocky packages
+  ansible.builtin.package:
+    name: "{{ item }}"
   when: ansible_os_family == 'RedHat'
   with_items:
-   - "epel-release"
-   - "systemd-networkd"
+    - epel-release
+    - systemd-networkd
 
-- name: ensure absence of classic /etc/network/interfaces
-  file:
-   path: /etc/network/interfaces
-   state: absent
+- name: Ensure absence of classic /etc/network/interfaces
+  ansible.builtin.file:
+    path: /etc/network/interfaces
+    state: absent
 
-- name: set loopback ip
-  template:
-   src: loopback.network
-   dest: /etc/systemd/network/00_loopback.network
+- name: Set loopback ip
+  ansible.builtin.template:
+    src: loopback.network
+    dest: /etc/systemd/network/00_loopback.network
+    mode: 0644
   register: loopback
 
-- name: declare interfaces list
-  set_fact:
+- name: Declare interfaces list
+  ansible.builtin.set_fact:
     interfaces: []
+- name: Reconcile interfaces to configure
+  ansible.builtin.set_fact:
+    interfaces: "{{ interfaces + [item] }}"
+  loop: "{{ ansible_interfaces }}"
+  when: item not in reserved_ports and item|regex_search("^enp") or item|regex_search("^eno") or item|regex_search("^eth")
 
-- name: reconcile interfaces to configure
-  set_fact:
-    interfaces: '{{interfaces + [item]}}'
-  loop: "{{ansible_interfaces}}"
-  when: "item not in reserved_ports and item|regex_search(\"^enp\") or item|regex_search(\"^eno\") or item|regex_search(\"^eth\")"
+- name: Configure physical interfaces on which to run bgpvlan
+  ansible.builtin.template:
+    src: bgpvlan_hw.network
+    dest: /etc/systemd/network/01_bgpvlan_{{ item }}_hw.network
+    mode: 0644
+  loop: "{{ interfaces }}"
 
-- name: configure physical interfaces on which to run bgpvlan
-  template:
-   src: bgpvlan_hw.network
-   dest: /etc/systemd/network/01_bgpvlan_{{item}}_hw.network
-  loop: "{{interfaces}}"
+- name: Create bgpvlan virtual interfaces
+  ansible.builtin.template:
+    src: bgpvlan.netdev
+    dest: /etc/systemd/network/01_bgpvlan_{{ item }}.netdev
+    mode: 0644
+  loop: "{{ interfaces }}"
 
-- name: create bgpvlan virtual interfaces
-  template:
-   src: bgpvlan.netdev
-   dest: /etc/systemd/network/01_bgpvlan_{{item}}.netdev
-  loop: "{{interfaces}}"
+- name: Configure bgpvlan virtual interfaces
+  ansible.builtin.template:
+    src: bgpvlan.network
+    dest: /etc/systemd/network/01_bgpvlan_{{ item }}.network
+    mode: 0644
+  loop: "{{ interfaces }}"
 
-- name: configure bgpvlan virtual interfaces
-  template:
-   src: bgpvlan.network
-   dest: /etc/systemd/network/01_bgpvlan_{{item}}.network
-  loop: "{{interfaces}}"
-
-- name: ensure NetworkManager is disabled
-  service:
-   name: NetworkManager
-   enabled: false
+- name: Ensure NetworkManager is disabled
+  ansible.builtin.service:
+    name: NetworkManager
+    enabled: false
   when: ansible_os_family == 'RedHat'
 
-- name: enable systemd-networkd
-  service:
-   name: systemd-networkd
-   enabled: true
+- name: Enable systemd-networkd
+  ansible.builtin.service:
+    name: systemd-networkd
+    enabled: true
 
-- name: configure sysctls
-  template:
-   src: local.conf
-   dest: /etc/sysctl.d/local.conf
+- name: Configure sysctls
+  ansible.builtin.template:
+    src: local.conf
+    dest: /etc/sysctl.d/local.conf
+    mode: 0644
   register: sysctl
 
-- name: install frr
-  package: name=frr
+- name: Install frr
+  ansible.builtin.package:
+    name: frr
 
-- name: configure frr
-  template:
-   src: frr.conf
-   dest: /etc/frr/frr.conf
+- name: Configure frr
+  ansible.builtin.template:
+    src: frr.conf
+    dest: /etc/frr/frr.conf
+    mode: 0600
   register: conf
 
-- name: enable bgp
+- name: Enable bgp
   ansible.builtin.lineinfile:
-   path: /etc/frr/daemons
-   regexp: '^bgpd='
-   line: bgpd=yes
+    path: /etc/frr/daemons
+    regexp: ^bgpd=
+    line: bgpd=yes
 
-- name: set ecmp path count
+- name: Set ecmp path count
   ansible.builtin.lineinfile:
-   path: /etc/frr/daemons
-   regexp: '^bgpd_options='
-   line: bgpd_options="   -A 127.0.0.1 --ecmp 2"
+    path: /etc/frr/daemons
+    regexp: ^bgpd_options=
+    line: bgpd_options="   -A 127.0.0.1 --ecmp 2"
   register: daemons
 
-- name: enable frr
-  service:
-   name: frr
-   enabled: true
-   state: started
+- name: Enable frr
+  ansible.builtin.service:
+    name: frr
+    enabled: true
+    state: started
   when: "'localhost' not in inventory_hostname"
 
-- name: reboot
-  reboot:
+- name: Reboot
+  ansible.builtin.reboot:
   when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or sysctl.changed or loopback.changed )"

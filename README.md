@@ -609,7 +609,7 @@ The x86 router appears to offer similar bandwidth to the switch, and about doubl
 
 ## virtual performance
 
-my assumption is that the forwarding performance of the virtual implementation is highly bound to memory bandwidth.  heres iperf from one leaf to another in the virtualenv.py environment, ecmp enabled, on a ryzen 5600x with 2666mhz udimms populating both channels.  both the host and the VMs are running kernel `6.0.0-6-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.0.12-1`.  subsequent runs were consistently between 24-25 gbps.  without any context this is quite an impressive number considering how many memory hops are being made; i'll have to measure this again if i ever put 3200mhz udimms in this machine.
+my initial assumption would be that the forwarding performance of the virtual implementation is highly bound to memory bandwidth.  heres iperf from one leaf to another in the virtualenv.py environment, ecmp enabled, on a ryzen 5600x with 2666mhz udimms populating both channels.  both the host and the VMs are running kernel `6.0.0-6-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.0.12-1`.
 
 ```
 root@bgp-leaf-dc2a4:~# iperf -c 10.0.200.26 -P2 -t10
@@ -640,6 +640,22 @@ TCP window size: 16.0 KByte (default)
 [  1] 0.0000-10.0170 sec  14.3 GBytes  12.3 Gbits/sec
 [  2] 0.0000-10.0170 sec  14.3 GBytes  12.3 Gbits/sec
 [SUM] 0.0000-10.0002 sec  28.6 GBytes  24.6 Gbits/sec
+```
+
+here is the test on a xeon w-1290, dual channel ddr4 2666mhz, kernel 6.1.0-3-amd64 on host and guests:
+
+```
+root@bgp-leaf-c9805:~# iperf -c 10.178.43.106 -P2 -t10
+------------------------------------------------------------
+Client connecting to 10.178.43.106, TCP port 5001
+TCP window size: 16.0 KByte (default)
+------------------------------------------------------------
+[  1] local 10.178.43.206 port 55296 connected with 10.178.43.106 port 5001 (icwnd/mss/irtt=14/1448/268)
+[  2] local 10.178.43.206 port 55288 connected with 10.178.43.106 port 5001 (icwnd/mss/irtt=14/1448/331)
+[ ID] Interval       Transfer     Bandwidth
+[  1] 0.0000-10.0024 sec  23.6 GBytes  20.3 Gbits/sec
+[  2] 0.0000-10.0023 sec  23.6 GBytes  20.2 Gbits/sec
+[SUM] 0.0000-10.0001 sec  47.2 GBytes  40.5 Gbits/sec
 ```
 
 ## helpful links

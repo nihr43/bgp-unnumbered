@@ -1,7 +1,7 @@
 ---
 - name: Install debian tools
   ansible.builtin.package:
-    name: net-tools,traceroute,iperf,tcpdump,nmap
+    name: net-tools,traceroute,iperf,tcpdump,nmap,netplan.io
   when: ansible_os_family == 'Debian'
 
 - name: Install rocky packages
@@ -12,47 +12,24 @@
     - epel-release
     - systemd-networkd
 
-- name: Ensure absence of classic /etc/network/interfaces
-  ansible.builtin.file:
-    path: /etc/network/interfaces
-    state: absent
-
-- name: Set loopback ip
-  ansible.builtin.template:
-    src: loopback.network
-    dest: /etc/systemd/network/00_loopback.network
-    mode: 0644
-  register: loopback
-
 - name: Declare interfaces list
   ansible.builtin.set_fact:
     interfaces: []
+
 - name: Reconcile interfaces to configure
   ansible.builtin.set_fact:
     interfaces: "{{ interfaces + [item] }}"
   loop: "{{ ansible_interfaces }}"
   when: item not in reserved_ports and item|regex_search("^enp") or item|regex_search("^eno") or item|regex_search("^eth")
 
-- name: Configure physical interfaces on which to run bgpvlan
-  ansible.builtin.template:
-    src: bgpvlan_hw.network
-    dest: /etc/systemd/network/01_bgpvlan_{{ item }}_hw.network
-    mode: 0644
-  loop: "{{ interfaces }}"
-
-- name: Create bgpvlan virtual interfaces
-  ansible.builtin.template:
-    src: bgpvlan.netdev
-    dest: /etc/systemd/network/01_bgpvlan_{{ item }}.netdev
-    mode: 0644
-  loop: "{{ interfaces }}"
-
-- name: Configure bgpvlan virtual interfaces
-  ansible.builtin.template:
-    src: bgpvlan.network
-    dest: /etc/systemd/network/01_bgpvlan_{{ item }}.network
-    mode: 0644
-  loop: "{{ interfaces }}"
+- name: ensure classic and systemd-networkd configs are absent
+  ansible.builtin.file:
+    state: absent
+    path: '{{item}}'
+  with_items:
+    - /etc/systemd/network
+    - /etc/network/interfaces
+    - /etc/network/interfaces.d
 
 - name: Ensure NetworkManager is disabled
   ansible.builtin.service:
@@ -65,10 +42,17 @@
     name: systemd-networkd
     enabled: true
 
+- name: land netplan template
+  ansible.builtin.template:
+    src: netplan.yaml
+    dest: /etc/netplan/bgp-unnumbered.yaml
+    mode: 0600
+  register: network
+
 - name: Configure sysctls
   ansible.builtin.template:
     src: local.conf
-    dest: /etc/sysctl.d/local.conf
+    dest: /etc/sysctl.d/bgp-unnumbered.conf
     mode: 0644
   register: sysctl
 
@@ -105,4 +89,4 @@
 
 - name: Reboot
   ansible.builtin.reboot:
-  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or sysctl.changed or loopback.changed )"
+  when: "'localhost' not in inventory_hostname and ( conf.changed or daemons.changed or sysctl.changed or network.changed )"

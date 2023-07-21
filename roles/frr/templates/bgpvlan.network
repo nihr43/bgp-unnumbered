@@ -1,7 +1,0 @@
-[Match]
-Name=bgp{{item}}
-Type=vlan
-
-[Link]
-ActivationPolicy=always-up
-RequiredForOnline=no

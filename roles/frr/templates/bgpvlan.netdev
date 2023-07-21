@@ -1,6 +1,0 @@
-[NetDev]
-Name=bgp{{item}}
-Kind=vlan
-
-[VLAN]
-Id=10

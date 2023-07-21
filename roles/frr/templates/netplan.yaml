@@ -1,0 +1,18 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    lo:
+      addresses: ["{{router_ip}}/32"]
+{% for i in interfaces|sort %}
+    {{i}}:
+      dhcp4: no
+      optional: true
+      mtu: 9000
+{% endfor %}
+  vlans:
+{% for i in interfaces|sort %}
+    bgp{{i}}:
+      link: {{i}}
+      id: 10
+{% endfor %}

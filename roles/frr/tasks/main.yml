@@ -96,12 +96,13 @@
     path: /etc/frr/daemons
     regexp: ^bgpd=
     line: bgpd=yes
+  register: daemons
 
-- name: Set ecmp path count
+- name: attempt to keep frr up until remote filesystems have synced
   ansible.builtin.lineinfile:
-    path: /etc/frr/daemons
-    regexp: ^bgpd_options=
-    line: bgpd_options="   -A 127.0.0.1 --ecmp 2"
+    path: /lib/systemd/system/frr.service
+    regexp: ^Before=
+    line: Before=network.target remote-fs.target
   register: daemons
 
 - name: Enable frr

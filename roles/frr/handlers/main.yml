@@ -4,3 +4,9 @@
     name: frr
     state: restarted
   listen: restart frr
+
+- name: Restart sshd
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+  listen: restart sshd

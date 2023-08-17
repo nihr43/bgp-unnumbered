@@ -1,9 +1,11 @@
 ---
 
 - hosts: spine
+  serial: 1
   roles:
    - frr
 
 - hosts: leaf
+  serial: 1
   roles:
    - frr

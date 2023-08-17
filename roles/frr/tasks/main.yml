@@ -4,6 +4,11 @@
     name: net-tools,traceroute,iperf,tcpdump,nmap,netplan.io
   when: ansible_os_family == 'Debian'
 
+- name: install isc-dhcp-server
+  ansible.builtin.package:
+    name: isc-dhcp-server
+  when: l2_access is defined
+
 - name: Install rocky packages
   ansible.builtin.package:
     name: "{{ item }}"
@@ -48,6 +53,25 @@
     dest: /etc/netplan/bgp-unnumbered.yaml
     mode: 0600
   register: network
+
+- name: land dhcpd template
+  ansible.builtin.template:
+    src: dhcpd.conf
+    dest: /etc/dhcp/dhcpd.conf
+  when: l2_access is defined
+
+- name: enable dhcpd interfaces
+  lineinfile:
+    path: /etc/default/isc-dhcp-server
+    regexp: '^INTERFACESv4='
+    line: 'INTERFACESv4="{% for i in interfaces|sort %}{{i}} {% endfor %}br-dhcpd"'
+  when: l2_access is defined
+
+- name: Enable dhcpd
+  ansible.builtin.service:
+    name: isc-dhcp-server
+    enabled: true
+  when: l2_access is defined
 
 - name: Configure sysctls
   ansible.builtin.template:

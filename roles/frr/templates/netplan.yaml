@@ -3,10 +3,24 @@ network:
   renderer: networkd
   ethernets:
     lo:
-      addresses: ["{{router_ip}}/32"]
+      addresses:
+        - {{router_ip}}/32
+{% if anycast_addresses is defined %}
+{% for i in anycast_addresses %}
+        - {{i}}
+{% endfor %}
+{% endif %}
+{% if vxlan_access is defined %}
+{% for i in vxlan_access %}
+    {{i.port}}:
+      dhcp4: no
+{% endfor %}
+{% endif %}
 {% for i in interfaces|sort %}
     {{i}}:
-      dhcp4: no
+{% if l2_access is defined %}
+      addresses: ["172.30.{{ 255 | random(seed=inventory_hostname+i)}}.{{ (8 | random(seed=inventory_hostname+i)*32) + 1}}/27"]
+{% endif %}
       optional: true
       mtu: 9000
 {% endfor %}
@@ -16,3 +30,47 @@ network:
       link: {{i}}
       id: 10
 {% endfor %}
+{% if vxlans is defined %}
+  tunnels:
+{% for v in vxlans %}
+    vxlan{{v}}:
+      mode: vxlan
+      id: {{v}}
+      local: {{router_ip}}
+      mac-learning: false
+      mtu: 8950
+{% endfor %}
+{% endif %}
+{% if vxlan_access is defined %}
+  bonds:
+{% for i in vxlan_access %}
+    vxlan{{i.vni}}-access:
+      macaddress: {{i.es_sys_mac}}
+      dhcp4: no
+      interfaces:
+        - {{i.port}}
+      parameters:
+        mode: 802.3ad
+{% endfor %}
+{% endif %}
+{% if l2_access is defined or vxlans is defined%}
+  bridges:
+{% endif %}
+{% if l2_access is defined %}
+    br-dhcpd:
+      addresses: ["172.30.{{ 255 | random(seed=inventory_hostname)}}.{{ (8 | random(seed=inventory_hostname)*32) + 1}}/27"]
+{% endif %}
+{% if vxlans is defined %}
+{% for v in vxlans %}
+    br-vxlan{{v}}:
+      interfaces:
+        - vxlan{{v}}
+{% if vxlan_access is defined %}
+{% for i in vxlan_access %}
+{% if i.vni == v %}
+        - vxlan{{i.vni}}-access
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}

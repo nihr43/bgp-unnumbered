@@ -98,9 +98,9 @@ Here we're telling bgp to peer on each vlan interface, advertise all routes, and
 
 ---
 
-You may have noticed the `l2_access` var:  This is used to enable dhcpd servers on every port, serving random /27 networks.  Sounds silly, but this gives me quick network 'access' for unprovisioned devices plugged into spine routers, on the untagged broadcast domain.  Once provisioned, nodes peer over vlan 10.
-
-There is also the `vxlan_access` var, which implements [evpn-mh](https://signal.nih.earth/posts/evpn-mh/) on the the specified port and vxlan.
+- You may have noticed the `l2_access` var:  This is used to enable dhcpd servers on every port, serving random /27 networks.  Sounds silly, but this gives me quick network 'access' for unprovisioned devices plugged into spine routers, on the untagged broadcast domain.  Once provisioned, nodes peer over vlan 10.
+- There is also the `vxlan_access` var, which implements [evpn-mh](https://signal.nih.earth/posts/evpn-mh/) on the the specified port and vxlan.
+- asns are randomized if `asn` is not specified.  For a spine-leaf network, spines should share an asn.
 
 ## helpful links
 

@@ -23,6 +23,7 @@ network:
 {% endif %}
       optional: true
       mtu: 9000
+      ignore-carrier: true
 {% endfor %}
   vlans:
 {% for i in interfaces|sort %}

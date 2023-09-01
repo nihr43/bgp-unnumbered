@@ -128,6 +128,21 @@ route-map default permit 10
 
 Here we're telling bgp to peer on each vlan interface, advertise all routes, and accept only prefixes matching 'prefix-list'.  I should filter the advertised routes too, I haven't gotten to it.
 
+The inventory to achieve this looks like:
+
+```
+leaf:
+  hosts:
+    ...
+    10.0.200.2:
+      router_ip: 10.0.200.2
+    ...
+  vars:
+    reserved_ports: '[]'
+    vxlans: [100]
+    anycast_addresses: ['10.0.200.0/32']
+```
+
 ---
 
 - You may have noticed the `l2_access` var:  This is used to enable dhcpd servers on every port, serving random /27 networks.  Sounds silly, but this gives me quick network 'access' for unprovisioned devices plugged into spine routers, on the untagged broadcast domain.  Once provisioned, nodes peer over vlan 10.

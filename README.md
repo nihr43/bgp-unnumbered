@@ -38,7 +38,7 @@ With the above inventory, `main.yml` might look like this:
    - frr
 ```
 
-If you're just here for the end result, here is `/etc/netplan/bgp-unnumbered.yaml` on a k8s/ceph server:
+If you're just here for the end result, here is `/etc/netplan/bgp-unnumbered.yaml` on a k8s/ceph server acting as a leaf in a spine-leaf network:
 
 ```
 network:

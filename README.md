@@ -2,13 +2,43 @@
 
 This repository serves as a reference implementation of BGP unnumbered routing on linux.
 
-[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  In short, this approach significantly lowers the barrier to entry for building a pure l3 network.  For the uninitiated, ‘pure l3’ means our servers get true multipathing and failover without the need for l2 ‘hacks’ such as lacp, spanning tree, mclag, etc.
+[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  In short, this approach significantly lowers the barrier to entry for building a pure l3 network.  For the uninitiated, ‘pure l3’ means our servers get true multipathing and failover without the need for l2 ‘hacks’ such as lacp, spanning tree, mclag, etc.  Top-of-rack switches become top-of-rack routers, and servers advertise their presence directly into the network.
 
-Outside of the datacenter, this approach enables some capabilities that switches dont give you.  Lets say you have a small k8s, ceph, gluster, slurm, etc. cluster for which you have a need for ultra-high inter-node bandwidth.  With unnumbered BGP, it would be trivial to toss in some high-bandwidth network cards and implement a full mesh, or cisco 'stack' style ring network backplane.
+Outside of the datacenter, this approach enables some interesting capabilities that L2 approaches dont give you.  Lets say you have a small k8s, ceph, gluster, slurm, etc. cluster for which you want ultra-high inter-node bandwidth.  With unnumbered BGP, it would be trivial to toss in some high-bandwidth network cards and implement a full mesh, or cisco 'stack' style ring network backplane.
 
 ## implementation
 
-Here is `/etc/netplan/bgp-unnumbered.yaml` on a k8s/ceph server:
+This work is presented as an ansible role.  The inventory and `main.yml` are highly tailored to my own environment, so you are better off forking and changing these.
+
+A minimal `inventory.yaml` may look like this:
+
+```
+cluster:
+  hosts:
+    10.0.200.1:
+      router_ip: 10.0.200.1
+    10.0.200.2:
+      router_ip: 10.0.200.2
+    10.0.200.3:
+      router_ip: 10.0.200.3
+  vars:
+    reserved_ports: '[]'
+```
+
+There is regex in the 'Reconcile interfaces' task that matches all interfaces like ^enp, ^eno, ^eth.  `reserved_ports` prevents a specific interface from being configured.
+
+The inventory hostname and `router_ip` are two different lines because bootstrapping is a bit of a chicken-egg problem.  Currently to provision a new node, i'll use a host's current dhcp address as the inventory hostname, set the desired address as `router_ip` - run it once - then change the inventory hostname to match.
+
+With the above inventory, `main.yml` might look like this:
+
+```
+- hosts: cluster
+  serial: 1
+  roles:
+   - frr
+```
+
+If you're just here for the end result, here is `/etc/netplan/bgp-unnumbered.yaml` on a k8s/ceph server:
 
 ```
 network:
@@ -22,9 +52,11 @@ network:
     enp35s0:
       optional: true
       mtu: 9000
+      ignore-carrier: true
     enp36s0:
       optional: true
       mtu: 9000
+      ignore-carrier: true
   vlans:
     bgpenp35s0:
       link: enp35s0

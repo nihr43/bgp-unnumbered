@@ -17,8 +17,7 @@ def cleanup(client, log, pylxd):
             if str(lxdapi_exception) == "The instance is already stopped":
                 pass
             else:
-                log.info(lxdapi_exception)
-                exit(1)
+                raise Exception(lxdapi_exception)
         i.delete(wait=True)
         log.info(i.name + " deleted")
 
@@ -77,14 +76,12 @@ def create_node(client, name, image, pubkey, log):
     )
     log.info(err.stdout)
     if err.exit_code != 0:
-        log.info(err.stderr)
-        exit(1)
+        raise RuntimeError(err.stderr)
     err = inst.execute(["mkdir", "-p", "/root/.ssh"])
     log.info(err.stdout)
     if err.exit_code != 0:
         log.info("failed to mkdir /root/.ssh")
-        log.info(err.stderr)
-        exit(1)
+        raise RuntimeError(err.stderr)
 
     inst.files.put("/root/.ssh/authorized_keys", pubkey.exportKey("OpenSSH"))
     # wow! subsequent reboots in network configuration were borking our ssh installation/configuration
@@ -107,8 +104,7 @@ def wait_until_ready(instance, log):
         if exit_code == 0:
             break
         if i == count - 1:
-            log.info("timed out waiting")
-            exit(1)
+            raise TimeoutError("timed out waiting")
         time.sleep(1)
 
 
@@ -184,15 +180,13 @@ def run_tests(client, log):
                 log.info("icmp: " + i.name + " -> " + j.name)
                 if err.exit_code != 0:
                     log.info("icmp: " + i.name + " -> " + j.name + " failed")
-                    log.info(err.stderr)
-                    exit(1)
+                    raise RuntimeError(err.stderr)
 
     # start an iperf daemon on each router, and then measure bandwidth for every device combination
     for i in routers:
         err = i.execute(["iperf", "-sD"])
         if err.exit_code != 0:
-            log.info(err.stderr)
-            exit(1)
+            raise RuntimeError(err.stderr)
 
     # measure bandwidth between each node. vm-to-vm traffic should easily be above 10gbps.
     # less than 10 indicates an issue; bridge.mtu 6666 for example causes this test to fail
@@ -213,21 +207,20 @@ def run_tests(client, log):
                 log.info(err.stdout)
                 if err.exit_code != 0:
                     log.info("iperf: " + i.name + " -> " + j.name + " failed")
-                    log.info(err.stderr)
-                    exit(1)
+                    raise RuntimeError(err.stderr)
                 elif "tcp connect failed" in err.stderr:
-                    log.info(err.stderr)
-                    exit(1)
+                    raise RuntimeError(err.stderr)
                 regex = re.compile(
                     r"^\[SUM\].* ([0-9]{1,3}\.?[0-9]?) Gbits\/sec", re.MULTILINE
                 )
                 gigabits = regex.findall(err.stdout)
                 if len(gigabits) == 0:
-                    log.info("error fetching iperf output. is the bandwidth < 1 Gbit?")
-                    exit(1)
+                    raise RuntimeError(
+                        "error fetching iperf output. is the bandwidth < 1 Gbit?"
+                    )
                 if int(float(gigabits[0])) < 10:
                     log.info("iperf " + i.name + " -> " + j.name + " bandwidth failure")
-                    exit(1)
+                    raise RuntimeError()
 
     log.info("all tests passing")
 

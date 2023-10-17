@@ -149,6 +149,28 @@ leaf:
 - There is also the `vxlan_access` var, which implements [evpn-mh](https://signal.nih.earth/posts/evpn-mh/) on the the specified port and vxlan.
 - asns are randomized if `asn` is not specified.  For a spine-leaf network, spines should share an asn.
 
+## testing
+
+Also included in this repository is a python module for developing and testing the role on lxd kvm virtual machines.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `--run-tests`.
+
+To use the tool:
+
+```
+python3 testnet --cleanup --create --run-tests
+```
+
+The testnet tool generates an inventory and lands ssh keys; which can be used to run ansible without reprovisioning the test nodes:
+
+```
+ansible-playbook main.yml -i virtual.inventory
+```
+
+At which point you can re-run the tests:
+
+```
+python3 testnet --run-tests
+```
+
 ## helpful links
 
 [Vincent Bernat](https://vincent.bernat.ch/en/blog/2017-vxlan-bgp-evpn) has excellent content that helped me figure this out.

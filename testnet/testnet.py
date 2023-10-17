@@ -265,7 +265,8 @@ def main():
 
     if args.cleanup:
         cleanup(client, log, pylxd)
-    elif args.create:
+
+    if args.create:
         pubkey = create_keypair(RSA)
 
         spines = [
@@ -302,7 +303,8 @@ def main():
 
         log.info("environment created.  follow-up configuration can be performed with:")
         print("ansible-playbook main.yml -i virtual.inventory")
-    elif args.run_tests:
+
+    if args.run_tests:
         run_tests(client, log)
 
 

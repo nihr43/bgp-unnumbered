@@ -1,7 +1,7 @@
 [spine]
-{% for i in spines %}{{i.state().network['enp5s0']['addresses'][0]['address']}} router_ip=10.0.254.{{range(1, 254) | random}} router_advertise='[]' reserved_ports='["enp5s0"]' asn=65500 l2_access=false ansible_ssh_private_key_file=private.key
+{% for i in spines %}{{i.state().network['enp5s0']['addresses'][0]['address']}} router_ip=10.0.254.{{range(1, 254) | random}} router_advertise='[]' reserved_ports='["enp5s0"]' asn=65500 l2_access=false ansible_ssh_private_key_file=private.key testnet=True
 {% endfor %}
 
 [leaf]
-{% for i in leafs %}{{i.state().network['enp5s0']['addresses'][0]['address']}} router_ip=10.0.200.{{range(1, 254) | random}} router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false ansible_ssh_private_key_file=private.key
+{% for i in leafs %}{{i.state().network['enp5s0']['addresses'][0]['address']}} router_ip=10.0.200.{{range(1, 254) | random}} router_advertise='[]' reserved_ports='["enp5s0"]' l2_access=false ansible_ssh_private_key_file=private.key testnet=True
 {% endfor %}

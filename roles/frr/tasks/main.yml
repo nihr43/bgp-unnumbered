@@ -54,6 +54,14 @@
     mode: 0600
   register: network
 
+- name: land testnet netplan template
+  ansible.builtin.template:
+    src: testnet-dhcp.yaml
+    dest: /etc/netplan/testnet-dhcp.yaml
+    mode: 0600
+  register: network
+  when: testnet is defined
+
 - name: land dhcpd template
   ansible.builtin.template:
     src: dhcpd.conf

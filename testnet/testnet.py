@@ -166,10 +166,9 @@ def run_tests(client, log):
 
     for i in routers:
         log.info(
-            "found router "
-            + i.name
-            + " ip "
-            + i.state().network["lo"]["addresses"][1]["address"]
+            "found router {} ip {}".format(
+                i.name, i.state().network["lo"]["addresses"][1]["address"]
+            )
         )
 
     # each router should be able to reach every other router via icmp

@@ -1,8 +1,15 @@
+import logging
+import argparse
 import uuid
 import time
 import random
 import re
 from os import chmod
+from Crypto.PublicKey import RSA
+from jinja2 import Environment, FileSystemLoader
+
+import ansible_runner
+import pylxd
 
 
 def cleanup(client, log, pylxd):
@@ -226,13 +233,6 @@ def run_tests(client, log):
 
 
 def main():
-    import pylxd
-    import logging
-    import argparse
-    import ansible_runner
-    from jinja2 import Environment, FileSystemLoader
-    from Crypto.PublicKey import RSA
-
     logging.basicConfig(format="%(funcName)s(): %(message)s")
     log = logging.getLogger(__name__)
     log.setLevel(logging.INFO)

@@ -297,7 +297,7 @@ def main():
             inventory.write(template.render(spines=spines, leafs=leafs))
 
         ansible_runner.run(
-            private_data_dir="./", inventory="virtual.inventory", playbook="main.yml"
+            private_data_dir="./", inventory="virtual.inventory", playbook="testnet.yml"
         )
 
         log.info("environment created.  follow-up configuration can be performed with:")

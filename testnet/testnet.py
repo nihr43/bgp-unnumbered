@@ -181,9 +181,18 @@ def create_bridge(client, inst_a, inst_b, log):
 
 def run_tests(client, log):
     log.info("running regression tests")
-    routers = [i for i in client.instances.all() if i.description == "bgp-unnumbered"]
 
-    for i in routers:
+    spines = []
+    leafs = []
+
+    for n in get_nodes(client, log):
+        js = json.loads(n.description)
+        if js["role"] == "spine":
+            spines.append(n)
+        elif js["role"] == "leaf":
+            leafs.append(n)
+
+    for i in spines + leafs:
         log.info(
             "found router {} ip {}".format(
                 i.name, i.state().network["lo"]["addresses"][1]["address"]
@@ -191,8 +200,8 @@ def run_tests(client, log):
         )
 
     # each router should be able to reach every other router via icmp
-    for i in routers:
-        for j in routers:
+    for i in leafs:
+        for j in leafs:
             if j != i:
                 err = i.execute(
                     [
@@ -208,15 +217,15 @@ def run_tests(client, log):
                     raise RuntimeError(err.stderr)
 
     # start an iperf daemon on each router, and then measure bandwidth for every device combination
-    for i in routers:
+    for i in leafs:
         err = i.execute(["iperf", "-sD"])
         if err.exit_code != 0:
             raise RuntimeError(err.stderr)
 
     # measure bandwidth between each node. vm-to-vm traffic should easily be above 10gbps.
     # less than 10 indicates an issue; bridge.mtu 6666 for example causes this test to fail
-    for i in routers:
-        for j in routers:
+    for i in leafs:
+        for j in leafs:
             if j != i:
                 err = i.execute(
                     [

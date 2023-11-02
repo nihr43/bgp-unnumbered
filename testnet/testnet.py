@@ -4,6 +4,7 @@ import uuid
 import time
 import random
 import re
+import json
 from os import chmod
 from Crypto.PublicKey import RSA
 from jinja2 import Environment, FileSystemLoader
@@ -12,10 +13,24 @@ import ansible_runner
 import pylxd
 
 
+def get_nodes(client):
+    """
+    find instances
+    """
+    members = []
+    for i in client.instances.all():
+        try:
+            js = json.loads(i.description)
+            if js["bgp-unnumbered"]:
+                members.append(i)
+        except json.decoder.JSONDecodeError:
+            continue
+
+    return members
+
+
 def cleanup(client, log, pylxd):
-    instances_to_delete = [
-        i for i in client.instances.all() if i.description == "bgp-unnumbered"
-    ]
+    instances_to_delete = get_nodes(client)
 
     for i in instances_to_delete:
         try:
@@ -53,8 +68,8 @@ def create_keypair(RSA):
     return pubkey
 
 
-def create_node(client, name, image, pubkey, log):
-    name = "bgp-" + name + "-" + str(uuid.uuid4())[0:5]
+def create_node(client, role, image, pubkey, log):
+    name = "bgp-" + role + "-" + str(uuid.uuid4())[0:5]
     config = {
         "name": name,
         "description": "bgp-unnumbered",
@@ -70,6 +85,8 @@ def create_node(client, name, image, pubkey, log):
     }
     log.info("creating node " + name)
     inst = client.instances.create(config, wait=True)
+    inst.description = '{"bgp-unnumbered": true, "role": "%s"}' % role
+    inst.save(wait=True)
     inst.start(wait=True)
     wait_until_ready(inst, log)
 

@@ -7,7 +7,7 @@
 - name: install isc-dhcp-server
   ansible.builtin.package:
     name: isc-dhcp-server
-  when: l2_access is defined
+  when: l2_access is defined and ansible_os_family == 'Debian'
 
 - name: Install rocky packages
   ansible.builtin.package:

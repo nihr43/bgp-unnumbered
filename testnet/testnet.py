@@ -13,7 +13,7 @@ import ansible_runner
 import pylxd
 
 
-def get_nodes(client):
+def get_nodes(client, log):
     """
     find instances
     """
@@ -26,11 +26,13 @@ def get_nodes(client):
         except json.decoder.JSONDecodeError:
             continue
 
+    if len(members) == 0:
+        log.info("no nodes found")
     return members
 
 
 def cleanup(client, log, pylxd):
-    instances_to_delete = get_nodes(client)
+    instances_to_delete = get_nodes(client, log)
 
     for i in instances_to_delete:
         try:

@@ -8,7 +8,7 @@ Outside of the datacenter, this approach enables some interesting capabilities t
 
 ## implementation
 
-This work is presented as an ansible role.  The inventory and `main.yml` are highly tailored to my own environment, so you are better off forking and changing these.
+This work is presented as both a virtual network (see ## testing) and an ansible role.  The inventory and `main.yml` are tailored to my own environment, so you are better off forking and changing these.
 
 A minimal `inventory.yaml` may look like this:
 

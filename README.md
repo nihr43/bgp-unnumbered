@@ -151,12 +151,13 @@ leaf:
 
 ## testing
 
-Also included in this repository is a python module for developing and testing the role on lxd kvm virtual machines.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `--run-tests`.
+Also included in this repository is a python module for developing and testing the role on lxd kvm virtual machines.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `tox`.
 
 To use the tool:
 
 ```
-python3 testnet --cleanup --create --run-tests
+python3 testnet --clean --create
+tox
 ```
 
 The testnet tool generates an inventory and lands ssh keys; which can be used to run ansible without reprovisioning the test nodes:
@@ -168,7 +169,14 @@ ansible-playbook main.yml -i virtual.inventory
 At which point you can re-run the tests:
 
 ```
-python3 testnet --run-tests
+tox
+```
+
+Perhaps some time has passed and your the VMs have been shut down:
+
+```
+python3 testnet --start
+tox
 ```
 
 ## helpful links

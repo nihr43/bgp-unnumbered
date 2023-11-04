@@ -31,6 +31,11 @@ def get_nodes(client, log):
     return members
 
 
+def start(client, log):
+    for i in get_nodes(client, log):
+        i.start(wait=True)
+
+
 def cleanup(client, log, pylxd):
     instances_to_delete = get_nodes(client, log)
 
@@ -288,6 +293,11 @@ def main():
         action="store_true",
         help="Run interconnectivity regression tests.",
     )
+    parser.add_argument(
+        "--start",
+        action="store_true",
+        help="Discover and start an existing topology.",
+    )
     args = parser.parse_args()
 
     if args.cleanup:
@@ -330,6 +340,9 @@ def main():
 
         log.info("environment created.  follow-up configuration can be performed with:")
         print("ansible-playbook main.yml -i virtual.inventory")
+
+    if args.start:
+        start(client, log)
 
     if args.run_tests:
         run_tests(client, log)

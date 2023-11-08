@@ -27,5 +27,5 @@ def test_icmp():
                         j.state().network["lo"]["addresses"][1]["address"],
                     ]
                 )
-                log.info("icmp: " + i.name + " -> " + j.name)
+                print("icmp: {} -> {}".format(i.name, j.name))
                 assert err.exit_code == 0

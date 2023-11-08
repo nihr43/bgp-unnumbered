@@ -10,13 +10,10 @@ def test_bandwidth():
     log = logging.getLogger(__name__)
     client = pylxd.Client()
 
-    spines = []
     leafs = []
     for n in testnet.get_nodes(client, log):
         js = json.loads(n.description)
-        if js["role"] == "spine":
-            spines.append(n)
-        elif js["role"] == "leaf":
+        if js["role"] == "leaf":
             leafs.append(n)
 
     # start an iperf daemon on each router, and then measure bandwidth for every device combination

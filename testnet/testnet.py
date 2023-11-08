@@ -253,7 +253,7 @@ def main():
         )
 
         log.info("environment created.  follow-up configuration can be performed with:")
-        print("ansible-playbook main.yml -i virtual.inventory")
+        print("ansible-playbook testnet.yml -i virtual.inventory")
 
     if args.start:
         start(client, log)

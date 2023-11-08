@@ -21,9 +21,11 @@ def test_bandwidth():
 
     # start an iperf daemon on each router, and then measure bandwidth for every device combination
     for i in leafs:
-        err = i.execute(["iperf", "-sD"])
-        if err.exit_code != 0:
-            raise RuntimeError(err.stderr)
+        iperf_running = i.execute(["pgrep", "-cf", '"iperf -sD"'])
+        if int(iperf_running.stdout) < 1:
+            err = i.execute(["iperf", "-sD"])
+            if err.exit_code != 0:
+                raise RuntimeError(err.stderr)
 
     # measure bandwidth between each node. vm-to-vm traffic should easily be above 10gbps.
     # less than 10 indicates an issue; bridge.mtu 6666 for example causes this test to fail

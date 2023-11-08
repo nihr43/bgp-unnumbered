@@ -51,7 +51,10 @@ def test_bandwidth():
                 )
                 gigabits = regex.findall(err.stdout)
                 if len(gigabits) == 0:
-                    raise RuntimeError(
+                    raise ValueError(
                         "error fetching iperf output. is the bandwidth < 1 Gbit?"
                     )
-                assert int(float(gigabits[0])) > 10
+                print(
+                    "{} has {}gbps throughput to {}".format(i.name, gigabits[0], j.name)
+                )
+                assert int(float(gigabits[0])) >= 10

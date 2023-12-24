@@ -1,11 +1,11 @@
 { nixpkgs ? import <nixpkgs> {  } }:
 
 let
-  pkgs = [
-    nixpkgs.python311Packages.pycryptodome
-    nixpkgs.python311Packages.pylxd
-    nixpkgs.python311Packages.jinja2
-    nixpkgs.python311Packages.ansible-runner
+  pkgs = with nixpkgs.python311Packages; [
+    pycryptodome
+    pylxd
+    jinja2
+    ansible-runner
   ];
 
 in

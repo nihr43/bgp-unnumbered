@@ -1,7 +1,5 @@
 import logging
 import argparse
-import uuid
-import time
 import random
 import json
 from os import chmod
@@ -10,6 +8,8 @@ from jinja2 import Environment, FileSystemLoader
 
 import ansible_runner
 import pylxd
+
+from router import Router
 
 
 def get_nodes(client, log):
@@ -79,70 +79,6 @@ def create_keypair(RSA):
     return pubkey
 
 
-def create_node(client, role, image, pubkey, log):
-    name = "bgp-" + role + "-" + str(uuid.uuid4())[0:5]
-    config = {
-        "name": name,
-        "description": "bgp-unnumbered",
-        "source": {
-            "type": "image",
-            "mode": "pull",
-            "server": "https://images.linuxcontainers.org",
-            "protocol": "simplestreams",
-            "alias": image,
-        },
-        "config": {"limits.cpu": "2", "limits.memory": "1GB"},
-        "type": "virtual-machine",
-    }
-    log.info("creating node " + name)
-    inst = client.instances.create(config, wait=True)
-    inst.description = '{"bgp-unnumbered": true, "role": "%s"}' % role
-    inst.save(wait=True)
-    inst.start(wait=True)
-    wait_until_ready(inst, log)
-
-    if "rocky" in image:
-        pkgm = "yum"
-    elif "debian" or "ubuntu" in image:
-        pkgm = "apt"
-
-    err = inst.execute(
-        [pkgm, "install", "python3", "openssh-server", "ca-certificates", "-y"]
-    )
-    log.info(err.stdout)
-    if err.exit_code != 0:
-        raise RuntimeError(err.stderr)
-    err = inst.execute(["mkdir", "-p", "/root/.ssh"])
-    log.info(err.stdout)
-    if err.exit_code != 0:
-        log.info("failed to mkdir /root/.ssh")
-        raise RuntimeError(err.stderr)
-
-    inst.files.put("/root/.ssh/authorized_keys", pubkey.exportKey("OpenSSH"))
-    # wow! subsequent reboots in network configuration were borking our ssh installation/configuration
-    inst.execute(["sync"])
-    return inst
-
-
-def wait_until_ready(instance, log):
-    """
-    waits until an instance is executable
-    """
-    log.info("waiting for lxd agent to become ready on " + instance.name)
-    count = 30
-    for i in range(count):
-        try:
-            exit_code = instance.execute(["hostname"]).exit_code
-        except BrokenPipeError:
-            continue
-
-        if exit_code == 0:
-            break
-        if i == count - 1:
-            raise TimeoutError("timed out waiting")
-        time.sleep(1)
-
-
 def create_bridge(client, inst_a, inst_b, log):
     """
     creates an l2 bridge linking two lxd instances
@@ -172,20 +108,20 @@ def create_bridge(client, inst_a, inst_b, log):
     # for linux bridges to behave as 802.1q trunks, vlan_filtering needs
     # enabled and desired vids need added to the bridge and the taps.
     # vlan.tagged does this for us.  you can check its effect with `bridge vlan show`
-    inst_a.devices[ethname] = {
+    inst_a.inst.devices[ethname] = {
         "name": ethname,
         "network": name,
         "type": "nic",
         "vlan.tagged": "10",
     }
-    inst_b.devices[ethname] = {
+    inst_b.inst.devices[ethname] = {
         "name": ethname,
         "network": name,
         "type": "nic",
         "vlan.tagged": "10",
     }
-    inst_a.save(wait=True)
-    inst_b.save(wait=True)
+    inst_a.inst.save(wait=True)
+    inst_b.inst.save(wait=True)
 
 
 def main():
@@ -230,26 +166,20 @@ def main():
     if args.create:
         pubkey = create_keypair(RSA)
 
-        spines = [
-            create_node(client, "spine", args.image, pubkey, log)
-            for i in range(args.spines)
-        ]
-        leafs = [
-            create_node(client, "leaf", args.image, pubkey, log)
-            for i in range(args.leafs)
-        ]
+        spines = [Router(client, "spine", pubkey) for i in range(args.spines)]
+        leafs = [Router(client, "leaf", pubkey) for i in range(args.leafs)]
 
         all_routers = spines + leafs
         for r in all_routers:
-            r.stop(wait=True)
+            r.inst.stop(wait=True)
 
         for leaf in leafs:
             for spine in spines:
                 create_bridge(client, leaf, spine, log)
 
         for r in all_routers:
-            r.start(wait=True)
-            wait_until_ready(r, log)
+            r.inst.start(wait=True)
+            r.wait_until_ready()
 
         env = Environment(loader=FileSystemLoader("templates"))
 

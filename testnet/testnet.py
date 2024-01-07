@@ -35,6 +35,11 @@ def start(client, log):
         i.start(wait=True)
 
 
+def stop(client, log):
+    for i in get_nodes(client, log):
+        i.stop(wait=True)
+
+
 def cleanup(client, log, pylxd):
     instances_to_delete = get_nodes(client, log)
 
@@ -212,6 +217,11 @@ def main():
         action="store_true",
         help="Discover and start an existing topology.",
     )
+    parser.add_argument(
+        "--stop",
+        action="store_true",
+        help="Stop the network.",
+    )
     args = parser.parse_args()
 
     if args.cleanup:
@@ -257,6 +267,9 @@ def main():
 
     if args.start:
         start(client, log)
+
+    if args.stop:
+        stop(client, log)
 
 
 if __name__ == "__main__":

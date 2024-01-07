@@ -16,4 +16,6 @@ jobs:
     - name: tox -e lint
       uses: docker://python:3.11
       with:
-        args: tox -e lint
+        args: |
+          pip install tox
+          tox -e lint

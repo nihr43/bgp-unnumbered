@@ -1,4 +1,3 @@
-import logging
 import argparse
 import random
 import json
@@ -12,7 +11,7 @@ import pylxd
 from router import Router
 
 
-def get_nodes(client, log):
+def get_nodes(client):
     """
     find instances
     """
@@ -26,22 +25,22 @@ def get_nodes(client, log):
             continue
 
     if len(members) == 0:
-        log.info("no nodes found")
+        print("no nodes found")
     return members
 
 
-def start(client, log):
-    for i in get_nodes(client, log):
+def start(client):
+    for i in get_nodes(client):
         i.start(wait=True)
 
 
-def stop(client, log):
-    for i in get_nodes(client, log):
+def stop(client):
+    for i in get_nodes(client):
         i.stop(wait=True)
 
 
-def cleanup(client, log, pylxd):
-    instances_to_delete = get_nodes(client, log)
+def cleanup(client, pylxd):
+    instances_to_delete = get_nodes(client)
 
     for i in instances_to_delete:
         try:
@@ -52,14 +51,14 @@ def cleanup(client, log, pylxd):
             else:
                 raise Exception(lxdapi_exception)
         i.delete(wait=True)
-        log.info(i.name + " deleted")
+        print("{} deleted".format(i.name))
 
     networks = client.networks.all()
     for n in networks:
         try:
             if n.description == "bgp-unnumbered":
                 n.delete(wait=True)
-                log.info(n.name + " deleted")
+                print("{} deleted".format(n.name))
         except pylxd.exceptions.NotFound:
             pass
 
@@ -79,7 +78,7 @@ def create_keypair(RSA):
     return pubkey
 
 
-def create_bridge(client, inst_a, inst_b, log):
+def create_bridge(client, inst_a, inst_b):
     """
     creates an l2 bridge linking two lxd instances
     """
@@ -93,7 +92,7 @@ def create_bridge(client, inst_a, inst_b, log):
         "bridge.mtu": "9000",
     }
     name = inst_a.name[-5:] + "-" + inst_b.name[-5:]
-    log.info("creating network " + name)
+    print("creating network {}".format(name))
     client.networks.create(name, description="bgp-unnumbered", config=config)
     """
     qemu appears to use this 'eth' number to enumerate the pci ids.
@@ -125,9 +124,6 @@ def create_bridge(client, inst_a, inst_b, log):
 
 
 def main():
-    logging.basicConfig(format="%(funcName)s(): %(message)s")
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
     client = pylxd.Client()
 
     parser = argparse.ArgumentParser()
@@ -161,7 +157,7 @@ def main():
     args = parser.parse_args()
 
     if args.cleanup:
-        cleanup(client, log, pylxd)
+        cleanup(client, pylxd)
 
     if args.create:
         pubkey = create_keypair(RSA)
@@ -175,7 +171,7 @@ def main():
 
         for leaf in leafs:
             for spine in spines:
-                create_bridge(client, leaf, spine, log)
+                create_bridge(client, leaf, spine)
 
         for r in all_routers:
             r.inst.start(wait=True)
@@ -192,14 +188,14 @@ def main():
             private_data_dir="./", inventory="virtual.inventory", playbook="testnet.yml"
         )
 
-        log.info("environment created.  follow-up configuration can be performed with:")
+        print("environment created.  follow-up configuration can be performed with:")
         print("ansible-playbook testnet.yml -i virtual.inventory")
 
     if args.start:
-        start(client, log)
+        start(client)
 
     if args.stop:
-        stop(client, log)
+        stop(client)
 
 
 if __name__ == "__main__":

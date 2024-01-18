@@ -1,17 +1,15 @@
 import pylxd
-import logging
 import json
 import re
 
-import testnet
+import testnet.testnet as testnet
 
 
 def test_bandwidth():
-    log = logging.getLogger(__name__)
     client = pylxd.Client()
 
     leafs = []
-    for n in testnet.get_nodes(client, log):
+    for n in testnet.get_nodes(client):
         js = json.loads(n.description)
         if js["role"] == "leaf":
             leafs.append(n)
@@ -39,10 +37,10 @@ def test_bandwidth():
                         "-t0.1",
                     ]
                 )
-                log.info("iperf: " + i.name + " -> " + j.name)
-                log.info(err.stdout)
+                print("iperf: " + i.name + " -> " + j.name)
+                print(err.stdout)
                 if err.exit_code != 0:
-                    log.info("iperf: " + i.name + " -> " + j.name + " failed")
+                    print("iperf: " + i.name + " -> " + j.name + " failed")
                     raise RuntimeError(err.stderr)
                 elif "tcp connect failed" in err.stderr:
                     raise RuntimeError(err.stderr)

@@ -8,7 +8,10 @@ from jinja2 import Environment, FileSystemLoader
 import ansible_runner
 import pylxd
 
-from router import Router
+try:
+    from router import Router
+except ImportError:
+    from testnet.router import Router
 
 
 def get_nodes(client):

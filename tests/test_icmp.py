@@ -1,16 +1,13 @@
 import pylxd
-import logging
 import json
 
-import testnet
-
+import testnet.testnet as testnet
 
 def test_icmp():
-    log = logging.getLogger(__name__)
     client = pylxd.Client()
 
     leafs = []
-    for n in testnet.get_nodes(client, log):
+    for n in testnet.get_nodes(client):
         js = json.loads(n.description)
         if js["role"] == "leaf":
             leafs.append(n)

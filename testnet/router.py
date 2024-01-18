@@ -1,5 +1,6 @@
 import uuid
 import time
+import ipaddress
 
 
 class Router:
@@ -60,3 +61,25 @@ class Router:
             if i == count - 1:
                 raise TimeoutError("timed out waiting")
             time.sleep(1)
+
+    def get_valid_ipv4(self, interface):
+        """
+        ipv4 addresses can take a moment to be assigned on boot, so
+        inst.state().network['eth0']['addresses'][0]['address'] is not reliable.
+        This waits until a valid address is assigned and returns it.
+        """
+        print("waiting for valid ipv4 address on", self.name)
+        i = 0
+        while i < 30:
+            time.sleep(1)
+            candidate_ip = self.inst.state().network[interface]["addresses"][0][
+                "address"
+            ]
+            try:
+                ipaddress.IPv4Address(candidate_ip)
+            except ipaddress.AddressValueError:
+                continue
+            else:
+                return candidate_ip
+
+        raise TimeoutError("timed out waiting")

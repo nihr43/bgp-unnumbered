@@ -49,18 +49,19 @@ class Router:
         waits until an instance is executable
         """
         print("waiting for lxd agent to become ready on " + self.name)
-        count = 30
-        for i in range(count):
+        i = 0
+        while i < 30:
+            i += 1
             try:
                 exit_code = self.inst.execute(["hostname"]).exit_code
             except BrokenPipeError:
                 continue
 
             if exit_code == 0:
-                break
-            if i == count - 1:
-                raise TimeoutError("timed out waiting")
+                return
             time.sleep(1)
+
+        raise TimeoutError("timed out waiting")
 
     def get_valid_ipv4(self, interface):
         """
@@ -71,13 +72,14 @@ class Router:
         print("waiting for valid ipv4 address on", self.name)
         i = 0
         while i < 30:
-            time.sleep(1)
+            i += 1
             candidate_ip = self.inst.state().network[interface]["addresses"][0][
                 "address"
             ]
             try:
                 ipaddress.IPv4Address(candidate_ip)
             except ipaddress.AddressValueError:
+                time.sleep(1)
                 continue
             else:
                 return candidate_ip

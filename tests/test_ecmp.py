@@ -1,14 +1,14 @@
 import pylxd
 import json
 
-import testnet.testnet as testnet
+from testnet.testnet import get_nodes
 
 def test_ecmp():
     client = pylxd.Client()
 
     leafs = []
     spines = []
-    for n in testnet.get_nodes(client):
+    for n in get_nodes(client):
         js = json.loads(n.description)
         if js["role"] == "leaf":
             leafs.append(n)

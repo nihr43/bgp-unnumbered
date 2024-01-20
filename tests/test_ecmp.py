@@ -31,6 +31,6 @@ def test_ecmp():
                 )
                 if err.exit_code != 0:
                     raise RuntimeError(err.stderr)
-                routes = err.stdout.count("nexthop via inet6")
+                routes = err.stdout.count("via inet6 fe80")
                 print("{} has {} routes to {}".format(i.name, routes, j.name))
                 assert routes == n_spines

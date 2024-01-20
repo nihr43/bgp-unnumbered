@@ -22,8 +22,8 @@ def test_bandwidth():
             if err.exit_code != 0:
                 raise RuntimeError(err.stderr)
 
-    # measure bandwidth between each node. vm-to-vm traffic should easily be above 10gbps.
-    # less than 10 indicates an issue; bridge.mtu 6666 for example causes this test to fail
+    # measure bandwidth between each node. vm-to-vm traffic should easily be above 50gbps.
+    # less than 50 indicates an issue; bridge.mtu 6666 for example causes this to fall as low as 121 Mbits/sec.
     for i in leafs:
         for j in leafs:
             if j != i:
@@ -55,4 +55,4 @@ def test_bandwidth():
                 print(
                     "{} has {}gbps throughput to {}".format(i.name, gigabits[0], j.name)
                 )
-                assert int(float(gigabits[0])) >= 10
+                assert int(float(gigabits[0])) > 50

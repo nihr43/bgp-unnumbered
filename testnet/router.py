@@ -4,10 +4,9 @@ import ipaddress
 
 
 class Router:
-    def __init__(self, client, role, sshkey):
+    def __init__(self, client, role, sshkey, image):
         rnd = str(uuid.uuid4())[0:5]
         self.name = "bgp-{}-{}".format(role, rnd)
-        image = "debian/12"
         config = {
             "name": self.name,
             "description": '{"bgp-unnumbered": true, "role": "%s"}' % role,
@@ -25,12 +24,14 @@ class Router:
         self.inst = client.instances.create(config, wait=True)
         self.inst.start(wait=True)
         self.wait_until_ready()
+        self.get_valid_ipv4("eth0")
 
-        if "rocky" in image.lower():
+        if "rocky" in image.lower() or "fedora" in image.lower():
             pkgm = "yum"
-        elif "debian" or "ubuntu" in image.lower():
+        elif "debian" in image.lower() or "ubuntu" in image.lower():
             pkgm = "apt"
-
+        else:
+            raise ValueError("Unsupported image provided")
         err = self.inst.execute(
             [pkgm, "install", "python3", "openssh-server", "ca-certificates", "-y"]
         )

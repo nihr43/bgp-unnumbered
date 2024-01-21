@@ -165,8 +165,10 @@ def main():
     if args.create:
         pubkey = create_keypair(RSA)
 
-        spines = [Router(client, "spine", pubkey) for i in range(args.spines)]
-        leafs = [Router(client, "leaf", pubkey) for i in range(args.leafs)]
+        spines = [
+            Router(client, "spine", pubkey, args.image) for i in range(args.spines)
+        ]
+        leafs = [Router(client, "leaf", pubkey, args.image) for i in range(args.leafs)]
 
         all_routers = spines + leafs
         for r in all_routers:

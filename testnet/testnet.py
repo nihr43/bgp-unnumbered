@@ -193,6 +193,10 @@ def main():
             private_data_dir="./", inventory="virtual.inventory", playbook="testnet.yml"
         )
 
+        for r in all_routers:
+            r.wait_until_ready()
+            r.get_valid_ipv4("eth0")
+
         print("environment created.  follow-up configuration can be performed with:")
         print("ansible-playbook testnet.yml -i virtual.inventory")
 

@@ -6,6 +6,8 @@ This repository serves as a reference implementation of BGP unnumbered routing o
 
 Outside of the datacenter, this approach enables some interesting capabilities that L2 approaches dont give you.  Lets say you have a small k8s, ceph, gluster, slurm, etc. cluster for which you want ultra-high inter-node bandwidth.  With unnumbered BGP, it would be trivial to toss in some high-bandwidth network cards and implement a full mesh, or cisco 'stack' style ring network backplane.
 
+Scroll to `testing` for a quick-start on an emulated LXD network.
+
 ## implementation
 
 This work is presented as both a virtual network (see ## testing) and an ansible role.  The inventory and `main.yml` are tailored to my own environment, so you are better off forking and changing these.

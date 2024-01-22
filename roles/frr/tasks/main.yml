@@ -9,14 +9,21 @@
     name: isc-dhcp-server
   when: l2_access is defined and ansible_os_family == 'Debian'
 
-- name: Install rocky packages
+- name: Install fedora family packages
   ansible.builtin.package:
     name: "{{ item }}"
   when: ansible_os_family == 'RedHat'
   with_items:
     - netplan
-    - epel-release
     - systemd-networkd
+    - iperf
+
+- name: Install netplan from epel
+  ansible.builtin.package:
+    name: "{{ item }}"
+  when: ansible_os_family == 'RedHat'
+  with_items:
+    - netplan
 
 - name: Declare interfaces list
   ansible.builtin.set_fact:

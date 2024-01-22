@@ -2,15 +2,11 @@
 
 This repository serves as a reference implementation of BGP unnumbered routing on linux.
 
-[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  In short, this approach significantly lowers the barrier to entry for building a pure l3 network.  For the uninitiated, ‘pure l3’ means our servers get true multipathing and failover without the need for l2 ‘hacks’ such as lacp, spanning tree, mclag, etc.  Top-of-rack switches become top-of-rack routers, and servers advertise their presence directly into the network.
-
-Outside of the datacenter, this approach enables some interesting capabilities that L2 approaches dont give you.  Lets say you have a small k8s, ceph, gluster, slurm, etc. cluster for which you want ultra-high inter-node bandwidth.  With unnumbered BGP, it would be trivial to toss in some high-bandwidth network cards and implement a full mesh, or cisco 'stack' style ring network backplane.
-
-Scroll to `testing` for a quick-start on an emulated LXD network.
+[BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  In short, this approach significantly lowers the barrier to entry for building a pure l3 network - servers are simply assigned /32 ipv4 loopback adresses, and peer over unnumbered `up` network links.  This gives us true multipathing and failover without the need for l2 ‘hacks’ such as lacp, spanning tree, mclag, etc.  Top-of-rack switches become top-of-rack routers, and servers advertise their presence directly into the network.
 
 ## implementation
 
-This work is presented as both a virtual network (see ## testing) and an ansible role.  The inventory and `main.yml` are tailored to my own environment, so you are better off forking and changing these.
+This work is presented as both a virtual network (see `testing`) and an ansible role.  The inventory and `main.yml` are tailored to my own environment, so you are better off forking and changing these.
 
 A minimal `inventory.yaml` may look like this:
 

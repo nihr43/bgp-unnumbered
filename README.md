@@ -151,13 +151,13 @@ leaf:
 
 ## testing
 
-Also included in this repository is a python module for developing and testing the role on lxd containers.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `tox`.
+Also included in this repository is a python module for developing and testing the role on lxd containers.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `pytest`.
 
 To use the tool:
 
 ```
 python3 testnet --clean --create
-tox
+pytest
 ```
 
 The testnet tool generates an inventory and lands ssh keys; which can be used to run ansible without reprovisioning the test nodes:
@@ -169,15 +169,22 @@ ansible-playbook testnet.yml -i virtual.inventory
 At which point you can re-run the tests:
 
 ```
-tox
+pytest
 ```
 
 Perhaps some time has passed and the instances have been shut down:
 
 ```
 python3 testnet --start
+```
+
+Alternatively, `tox` has been taught to run the full test suite on a handful of distros all in one go:
+
+```
 tox
 ```
+
+As of 8b59b714, tests are being maintained for ubuntu/23.10, debian/12, and fedora/39.
 
 ## helpful links
 

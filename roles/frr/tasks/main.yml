@@ -9,6 +9,13 @@
     name: isc-dhcp-server
   when: l2_access is defined and ansible_os_family == 'Debian'
 
+- name: Install epel
+  ansible.builtin.package:
+    name: "{{ item }}"
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RockyLinux'
+  with_items:
+    - epel-release
+
 - name: Install fedora family packages
   ansible.builtin.package:
     name: "{{ item }}"

@@ -26,7 +26,11 @@ class Router:
         self.wait_until_ready()
         self.get_valid_ipv4("eth0")
 
-        if "rocky" in image.lower() or "fedora" in image.lower():
+        if (
+            "rocky" in image.lower()
+            or "fedora" in image.lower()
+            or "centos" in image.lower()
+        ):
             pkgm = "yum"
         elif "debian" in image.lower() or "ubuntu" in image.lower():
             pkgm = "apt"

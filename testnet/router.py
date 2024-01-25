@@ -57,14 +57,16 @@ class Router:
         i = 0
         while i < 30:
             i += 1
+            time.sleep(1)
             try:
                 exit_code = self.inst.execute(["hostname"]).exit_code
             except BrokenPipeError:
                 continue
+            except ConnectionResetError:
+                continue
 
             if exit_code == 0:
                 return
-            time.sleep(1)
 
         raise TimeoutError("timed out waiting")
 
@@ -78,13 +80,15 @@ class Router:
         i = 0
         while i < 30:
             i += 1
+            time.sleep(1)
             candidate_ip = self.inst.state().network[interface]["addresses"][0][
                 "address"
             ]
             try:
                 ipaddress.IPv4Address(candidate_ip)
             except ipaddress.AddressValueError:
-                time.sleep(1)
+                continue
+            except ConnectionResetError:
                 continue
             else:
                 return candidate_ip

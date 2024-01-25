@@ -1,6 +1,10 @@
 import uuid
 import time
 import ipaddress
+import logging
+
+# pylxd's usage of ws4py is a bit too chatty while we wait for instances
+logging.basicConfig(level=logging.CRITICAL)
 
 
 class Router:

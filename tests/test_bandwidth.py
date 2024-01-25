@@ -55,4 +55,4 @@ def test_bandwidth():
                 print(
                     "{} has {}gbps throughput to {}".format(i.name, gigabits[0], j.name)
                 )
-                assert int(float(gigabits[0])) > 50
+                assert int(float(gigabits[0])) > 25

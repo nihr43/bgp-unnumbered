@@ -4,7 +4,7 @@ import json
 from testnet.testnet import get_nodes
 
 def test_ecmp():
-    client = pylxd.Client()
+    client = pylxd.Client(endpoint="/var/lib/incus/unix.socket")
 
     leafs = []
     spines = []

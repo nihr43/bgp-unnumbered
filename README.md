@@ -149,7 +149,7 @@ leaf:
 
 ## testing
 
-Also included in this repository is a python module for developing and testing the role on lxd containers.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `pytest`.
+Also included in this repository is a python module for developing and testing the role on incus containers.  This tool will by default provision 2 spines and 3 leafs, connect them with point-to-point bridges, and provision the role.  Tests can then be run with `pytest`.
 
 To use the tool:
 

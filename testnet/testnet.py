@@ -127,7 +127,7 @@ def create_bridge(client, inst_a, inst_b):
 
 
 def main():
-    client = pylxd.Client()
+    client = pylxd.Client(endpoint="/var/lib/incus/unix.socket")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--create", action="store_true")

@@ -1,0 +1,26 @@
+---
+dependencies:
+  - black
+  - openssh
+  - python311Packages.pytest
+  - python311Packages.flake8
+  - python311Packages.pycryptodome
+  - python311Packages.pylxd
+  - python311Packages.jinja2
+  - python311Packages.ansible-runner
+build:
+  build:
+    cmd: |
+      python3 testnet --clean --create --image ubuntu/23.10 -s2 -l2
+      pytest tests
+      python3 testnet --clean --create --image ubuntu/noble -s2 -l2
+      pytest tests
+      python3 testnet --clean
+    dependsOn:
+      - lint
+  lint:
+    input: |
+      testnet/*.py
+    cmd: |
+      black testnet
+      flake8 testnet --ignore=E501,W503

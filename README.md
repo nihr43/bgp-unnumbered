@@ -1,5 +1,10 @@
 # bgp-unnumbered
 
+```
+note as of 2025:
+see https://github.com/nihr43/nixa/blob/main/modules/bgp.nix for the latest state of the art.
+```
+
 This repository serves as a reference implementation of BGP unnumbered routing on linux.
 
 [BGP-unnumbered](https://www.oreilly.com/library/view/bgp-in-the/9781491983416/ch04.html) fundamentally is an implementation of [rfc5549](https://www.rfc-editor.org/rfc/rfc5549) - 'Advertising IPv4 Network Layer Reachability Information with an IPv6 Next Hop'.  In short, this approach significantly lowers the barrier to entry for building a pure l3 network - servers are simply assigned /32 ipv4 loopback adresses, and peer over unnumbered `up` network links.  This gives us true multipathing and failover without the need for l2 ‘hacks’ such as lacp, spanning tree, mclag, vrrp, etc.  Top-of-rack switches become top-of-rack routers, and servers advertise their presence directly into the network.
